@@ -1,4 +1,4 @@
-package com.discord.havlli.raidsignupbot.discordclient;
+package com.github.havlli.raidsignupbot.discordclient;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;

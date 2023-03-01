@@ -1,6 +1,6 @@
-package com.discord.havlli.raidsignupbot;
+package com.github.havlli.raidsignupbot;
 
-import com.discord.havlli.raidsignupbot.discordclient.InitiateClient;
+import com.github.havlli.raidsignupbot.discordclient.InitiateClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import reactor.core.publisher.Mono;
