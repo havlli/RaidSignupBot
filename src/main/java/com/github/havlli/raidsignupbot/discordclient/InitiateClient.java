@@ -15,7 +15,7 @@ public class InitiateClient {
 
 
     private InitiateClient() {
-        this.token = "MTA3NTg4Nzc5MzkyODE1NTI0Nw.GGSFsy.32en_t0_8aAn9Mp4fT7ULsINHA1rgLub7Zuy30";
+        this.token = "TOKEN";
     }
 
     private static InitiateClient getInstance() {
