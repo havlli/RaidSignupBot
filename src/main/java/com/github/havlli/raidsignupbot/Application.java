@@ -1,9 +1,8 @@
 package com.github.havlli.raidsignupbot;
 
-import com.github.havlli.raidsignupbot.discordclient.InitiateClient;
+import com.github.havlli.raidsignupbot.client.InitiateClient;
+import com.github.havlli.raidsignupbot.events.EventSubscriber;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import reactor.core.publisher.Mono;
 
 public class Application {
 
@@ -11,15 +10,7 @@ public class Application {
 
         GatewayDiscordClient gatewayClient = InitiateClient.getGateway();
 
-        //testing code
-        gatewayClient.on(MessageCreateEvent.class, event -> {
-           if (event.getMessage().getContent().equals("test")) {
-               return event.getMessage().getChannel()
-                       .flatMap(channel -> channel.createMessage("Tested!"));
-           }
-
-           return Mono.empty();
-        }).subscribe();
+        EventSubscriber.subscribeToEvents(gatewayClient);
 
         InitiateClient.onDisconnect();
     }

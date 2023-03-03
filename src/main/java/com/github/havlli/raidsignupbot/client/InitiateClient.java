@@ -1,4 +1,4 @@
-package com.github.havlli.raidsignupbot.discordclient;
+package com.github.havlli.raidsignupbot.client;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
@@ -15,7 +15,7 @@ public class InitiateClient {
 
 
     private InitiateClient() {
-        this.token = "MTA3NTg4Nzc5MzkyODE1NTI0Nw.GGSFsy.32en_t0_8aAn9Mp4fT7ULsINHA1rgLub7Zuy30";
+        this.token = Config.token;
     }
 
     private static InitiateClient getInstance() {
