@@ -28,15 +28,15 @@ public class EventSubscriber {
         getEventHandlers().add(handler);
     }
 
-    public static void subscribeToEvents(GatewayDiscordClient gatewayDiscordClient) {
-        registerAllEvents();
+    public static void subscribeEvents(GatewayDiscordClient gatewayDiscordClient) {
+        registerEvents();
         for (EventHandler handler : eventHandlers) {
             gatewayDiscordClient.on(handler.getEventType(), handler::handleEvent)
                     .subscribe();
         }
     }
 
-    private static void registerAllEvents() {
+    private static void registerEvents() {
         addEventHandler(new TestEvent());
     }
 }
