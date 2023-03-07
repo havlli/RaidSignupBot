@@ -1,5 +1,6 @@
 package com.github.havlli.raidsignupbot.events;
 
+import com.github.havlli.raidsignupbot.events.createevent.CreateEvent;
 import com.github.havlli.raidsignupbot.events.test.TestEvent;
 import discord4j.core.GatewayDiscordClient;
 
@@ -24,7 +25,7 @@ public class EventSubscriber {
         return eventHandlers;
     }
 
-    private static void addEventHandler(EventHandler handler) {
+    private static void addEvent(EventHandler handler) {
         getEventHandlers().add(handler);
     }
 
@@ -37,6 +38,7 @@ public class EventSubscriber {
     }
 
     private static void registerEvents() {
-        addEventHandler(new TestEvent());
+        addEvent(new TestEvent());
+        addEvent(new CreateEvent());
     }
 }
