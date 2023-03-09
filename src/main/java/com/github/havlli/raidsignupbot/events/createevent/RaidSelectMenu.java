@@ -17,7 +17,16 @@ public class RaidSelectMenu {
         SelectMenu selectMenu = SelectMenu.of("raid-select", eventOptions)
                 .withMaxValues(3).withMinValues(1);
         return ActionRow.of(selectMenu);
+    }
 
-
+    public static ActionRow getRaidSizeSelect() {
+        List<SelectMenu.Option> selectOptions = new ArrayList<>();
+        selectOptions.add(SelectMenu.Option.of("10", "10"));
+        selectOptions.add(SelectMenu.Option.of("15", "15"));
+        selectOptions.add(SelectMenu.Option.of("20", "20"));
+        selectOptions.add(SelectMenu.Option.of("25", "25"));
+        SelectMenu selectMenu = SelectMenu.of("raid-size", selectOptions)
+                .withMaxValues(1).withMinValues(1);
+        return ActionRow.of(selectMenu);
     }
 }
