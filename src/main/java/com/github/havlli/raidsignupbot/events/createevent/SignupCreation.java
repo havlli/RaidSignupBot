@@ -17,119 +17,124 @@ import discord4j.rest.util.Color;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class SignupCreation {
 
+    private static User user = null;
     private static String eventName = null;
     private static String eventDescription = null;
-    public static void setNameOfEvent(User user, ChatInputInteractionEvent event) {
+    private static LocalDate eventDate = null;
+    private static LocalTime eventTime = null;
+    private static List<Long> messagesToClean = new ArrayList<>();
+
+    public static void setUser(User passedUser) {
+        user = passedUser;
+    }
+
+    public static void sendNamePrompt(User user, ChatInputInteractionEvent event) {
+
+        setUser(user);
 
         Mono<PrivateChannel> privateChannelMono = user.getPrivateChannel();
         GatewayDiscordClient client = event.getClient();
 
+        String messagePrompt = "**Step 1**\nEnter name of the event!";
 
         privateChannelMono
-                .flatMap(privateChannel -> privateChannel.createMessage("**Step 1**\nEnter name of the event!"))
+                .flatMap(privateChannel -> privateChannel.createMessage(messagePrompt))
                 .flatMap(message -> {
                     System.out.println(message.getContent());
-                    return waitForName(user, client, message);
+                    return awaitNameInput(client, message);
                 })
                 .subscribe();
-
-
-        /*privateChannelMono
-                .flatMap(channel -> {
-                    Mono<Message> sentMessageMono = channel.createMessage("**Step 1**\nEnter name of the event!");
-                    Mono<Message> userMessageMono = channel.getMessagesAfter(Snowflake.of(Instant.now()))
-                            .filter(message -> message.getAuthor()
-                                    .map(User::getId)
-                                    .orElse(Snowflake.of("1"))
-                                    .equals(user.getId()))
-                            .next();
-
-
-                    return Mono.zip(sentMessageMono, userMessageMono);
-                })
-                .flatMap(tuple -> {
-                    Message sentMessage = tuple.getT1();
-                    Message userMessage = tuple.getT2();
-                    String response = userMessage.getContent();
-
-                    return sentMessage.getChannel().flatMap(messageChannel -> messageChannel.createMessage("You said: " + response));
-                }).subscribe();*/
     }
 
-    public static Mono<Message> waitForName(User user, GatewayDiscordClient client, Message previousMessage) {
+    public static Mono<Message> awaitNameInput(GatewayDiscordClient client, Message previousMessage) {
+        messagesToClean.add(previousMessage.getId().asLong());
 
         return client.getEventDispatcher().on(MessageCreateEvent.class)
-                .flatMap(event -> event.getMessage().getChannel()
-                        .flatMap(channel -> {
-                            Snowflake messageId = event.getMessage().getId();
-                            return channel.getMessagesBefore(messageId)
-                                    .take(1)
-                                    .next();
-                        })
+                .flatMap(event -> getPreviousMessageMono(event)
                         .filter(message -> message.getId().equals(previousMessage.getId()))
-                        .flatMap(message -> message.getChannel()
-                                .flatMap(messageChannel -> {
-                                    eventName = event.getMessage().getContent();
-                                    System.out.println(eventName);
-                                    return messageChannel.createMessage("**Step 2**\nEnter description of the event!");
-                                })
-                        ).flatMap(message -> waitForDescription(user, client, message))).next();
+                        .map(message -> saveField("eventName", message, event))
+                        .flatMap(message -> sendDescriptionPrompt(message, event))
+                        .flatMap(message -> awaitDescriptionInput(client, message)))
+                .next();
     }
 
-    public static Mono<Message> waitForDescription(User user, GatewayDiscordClient client, Message previousMessage) {
+    public static Mono<Message> sendDescriptionPrompt(Message passMessage, MessageCreateEvent passEvent) {
+        String messagePrompt = "**Step 2**\nEnter description of the event!";
+        return passMessage.getChannel()
+                .flatMap(messageChannel -> messageChannel.createMessage(messagePrompt));
+    }
+
+    public static Mono<Message> awaitDescriptionInput(GatewayDiscordClient client, Message previousMessage) {
+        messagesToClean.add(previousMessage.getId().asLong());
 
         return client.getEventDispatcher().on(MessageCreateEvent.class)
-                .flatMap(event -> event.getMessage().getChannel()
-                        .flatMap(channel -> {
-                            Snowflake messageId = event.getMessage().getId();
-                            return channel.getMessagesBefore(messageId)
-                                    .take(1)
-                                    .next();
-                        })
+                .flatMap(event -> getPreviousMessageMono(event)
                         .filter(message -> message.getId().equals(previousMessage.getId()))
-                        .flatMap(message -> message.getChannel()
-                                .flatMap(messageChannel -> {
-                                    eventDescription = event.getMessage().getContent();
-                                    System.out.println(eventDescription);
-                                    return messageChannel.createMessage("Description set");
-                                })
-                        ).flatMap(message -> startSignupCreation(user, client))).next();
+                        .map(message -> saveField("eventDescription", message, event))
+                        .flatMap(message -> sendDatePrompt(event))
+                        /*.flatMap(message -> awaitDateInput(user, client, message))*/)
+                .next();
     }
 
-    public static Mono<Message> startSignupCreation(User user, GatewayDiscordClient client) {
+    public static Mono<Message> sendDatePrompt(MessageCreateEvent passEvent) {
+        String messagePrompt = "**Step 3**\nEnter the date (format: yyyy-MM-dd)";
+        return user.getPrivateChannel()
+                .flatMap(privateChannel -> privateChannel.createMessage(messagePrompt))
+                .flatMap(message -> awaitDateInput(passEvent, message));
+        /*return passEvent.getMessage().getChannel()
+                .flatMap(messageChannel -> messageChannel.createMessage(messagePrompt))
+                .flatMap(message -> awaitDateInput(passEvent, message));*/
+    }
 
+    public static Mono<Message> awaitDateInput(MessageCreateEvent passEvent, Message previousMessage) {
+        messagesToClean.add(previousMessage.getId().asLong());
+        GatewayDiscordClient client = passEvent.getClient();
+
+        return client.getEventDispatcher().on(MessageCreateEvent.class)
+                .flatMap(event -> getPreviousMessageMono(event)
+                        .filter(message -> message.getId().equals(previousMessage.getId()))
+                        .map(message -> saveField("eventDate", message, event))
+
+                        .onErrorResume(e -> {
+                            System.out.println("Catched error");
+                            if (e instanceof DateTimeParseException) {
+                                return event.getMessage().getChannel().flatMap(channel -> channel.createMessage("Invalid Input!"))
+                                        .then(sendDatePrompt(event));
+                            }
+                            return Mono.error(e);
+                        })
+                        .flatMap(message -> raidSelectPrompt(client)))
+                .next();
+    }
+
+    public static Mono<Message> raidSelectPrompt(GatewayDiscordClient client) {
 
         System.out.printf("Sending private message to user %s.%s%n" , user.getUsername(), user.getDiscriminator());
 
+        String messagePrompt = "**Step 3**\nChoose which raids is this signup for:\nRequired 1 selection, maximum 3";
+
         return user.getPrivateChannel()
-                .flatMap(channel -> channel.createMessage("**Step 3**\nChoose which raids is this signup for:\nRequired 1 selection, maximum 3")
+                .flatMap(channel -> channel.createMessage(messagePrompt)
                         .withComponents(RaidSelectMenu.getRaidSelectMenu()))
                 .flatMap(message -> {
                     System.out.printf("Select Menu message id is %s%n", message.getId().asString());
 
-                    return waitForSelectMenuInteraction(user, message, client);
+                    return awaitRaidSelectInteraction(user, message, client);
                 });
-
-        /*client.getEventDispatcher().on(MessageCreateEvent.class)
-                .filter(clientO -> clientO.getMessage().getAuthor().map(User::getId).orElse(Snowflake.of("1")).equals(user.getId()))
-                .doOnNext(messageCreateEvent -> {
-                    System.out.println("Received message create event call in: " + messageCreateEvent.getMessage().getContent());
-                })
-                .filter(messageCreateEvent -> messageCreateEvent.getMessage().getContent().equals("confirm"))
-                .next()
-                .flatMap(response -> response.getMessage().getChannel())
-                .flatMap(channel -> {
-                    System.out.println("Sending confirmation message to channel: " + channel.getId().asString());
-                    return channel.createMessage("Confirmed");
-                }).subscribe();*/
     }
 
-    private static Mono<Message> waitForSelectMenuInteraction(User user, Message message, GatewayDiscordClient client) {
+    private static Mono<Message> awaitRaidSelectInteraction(User user, Message message, GatewayDiscordClient client) {
         return client.getEventDispatcher().on(SelectMenuInteractionEvent.class)
                 .filter(event -> event.getCustomId().equals("raid-select") && event.getInteraction().getUser().equals(user))
                 .next()
@@ -137,7 +142,7 @@ public class SignupCreation {
                     System.out.printf("User %s.%s - SelectMenuInteraction invoked in private channel %s%n",
                             user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
 
-                    return sendConfirmationMessage(event, message)
+                    return sendRaidSizePrompt(event, message)
                             .doOnNext(message1 -> System.out.println("Do on Next invoked - " + message1.getId().asLong()));
                 })
                 .timeout(Duration.ofSeconds(20))
@@ -151,7 +156,7 @@ public class SignupCreation {
                 });
     }
 
-    private static Mono<Message> sendConfirmationMessage(SelectMenuInteractionEvent event, Message message) {
+    private static Mono<Message> sendRaidSizePrompt(SelectMenuInteractionEvent event, Message message) {
         String messageId = message.getId().asString(); // Store ID of message before deleting it
         System.out.println(messageId);
 
@@ -174,23 +179,21 @@ public class SignupCreation {
         return event.deferReply()
                 .then(deleteMessage(message))
                 .then(event.createFollowup(InteractionFollowupCreateSpec.builder()
+                        .content("Choose maximum raid size!")
                         .addComponent(newRow)
+                        .addComponent(RaidSelectMenu.getRaidSizeSelect())
                         .addEmbed(embed)
                 .build()));
+    }
 
-        /*return message.edit(MessageEditSpec.builder()
-                .addComponent(newRow)
-                .addEmbed(embed)
-                .contentOrNull(null)
-                .build());*/
-        /*return event.reply("You selected these values: " + event.getValues() + " \ntype confirm to confirm choice")
-                .then(deleteMessage(message))
-                .flatMap(result -> {
-                    return event.getInteraction().getChannel().flatMap(channel -> {
-                        return channel.createMessage("Your second response goes here!");
-                    });
-                });*/
-
+    public static Mono<Message> getPreviousMessageMono(MessageCreateEvent event) {
+        return event.getMessage().getChannel()
+                .flatMap(messageChannel -> {
+                    Snowflake messageSnowflake = event.getMessage().getId();
+                    return messageChannel.getMessagesBefore(messageSnowflake)
+                            .take(1)
+                            .next();
+                });
     }
 
     private static Mono<Void> deleteMessage(Message message) {
@@ -198,5 +201,24 @@ public class SignupCreation {
             System.out.println("Failed to delete message " + message.getId().asString() + " : " + error.getMessage());
             return Mono.empty();
         });
+    }
+
+    public static Message saveField(String fieldName, Message passMessage, MessageCreateEvent passEvent) {
+        switch (fieldName) {
+            case "eventName" -> {
+                eventName = passEvent.getMessage().getContent();
+                System.out.println(eventName);
+            }
+            case "eventDescription" -> {
+                eventDescription = passEvent.getMessage().getContent();
+                System.out.println(eventDescription);
+            }
+            case "eventDate" -> {
+                String dateString = passEvent.getMessage().getContent();
+                eventDate = LocalDate.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                System.out.println(eventDate);
+            }
+        }
+        return passMessage;
     }
 }
