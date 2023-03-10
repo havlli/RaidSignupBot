@@ -24,7 +24,9 @@ public class CreateEvent implements EventHandler {
 
     private static Mono<Message> deferredMessage(ChatInputInteractionEvent event) {
 
-        SignupCreation.sendNamePrompt(event.getInteraction().getUser(), event);
+        SignupBuilder signupBuilder = new SignupBuilder(event);
+        signupBuilder.startBuildProcess();
+
         return event.createFollowup("Initiated process of creating event in your DMs, please continue there!")
                 .withEphemeral(true);
     }
