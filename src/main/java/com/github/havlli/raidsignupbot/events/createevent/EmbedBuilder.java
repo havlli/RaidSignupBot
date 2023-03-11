@@ -20,6 +20,7 @@ public class EmbedBuilder {
     private List<String> selectedRaids;
     private String raidSize;
     private String destinationChannelId;
+    private boolean reserveEnabled;
 
     public EmbedBuilder() {
         this.name = null;
@@ -29,6 +30,7 @@ public class EmbedBuilder {
         this.selectedRaids = null;
         this.raidSize = null;
         this.destinationChannelId = null;
+        this.reserveEnabled = false;
     }
 
     public static EmbedCreateSpec buildEmbed() {
@@ -81,6 +83,12 @@ public class EmbedBuilder {
                 .stream()
                 .findFirst()
                 .orElse(defaultChannelId);
-        fields.add(EmbedCreateFields.Field.of("Maximum size", this.destinationChannelId, false));
+        fields.add(EmbedCreateFields.Field.of("Channel to post in", this.destinationChannelId, false));
+    }
+
+    public void setReserveEnabled(boolean reserveEnabled) {
+        this.reserveEnabled = reserveEnabled;
+        if (reserveEnabled) fields.add(EmbedCreateFields.Field.of("SoftReserve", "Enabled", false));
+        else fields.add(EmbedCreateFields.Field.of("SoftReserve", "Disabled", false));
     }
 }
