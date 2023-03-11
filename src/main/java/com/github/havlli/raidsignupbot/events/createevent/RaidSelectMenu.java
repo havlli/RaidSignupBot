@@ -38,7 +38,7 @@ public class RaidSelectMenu {
         for (TextChannel textChannel : textChannels) {
             selectOptions.add(SelectMenu.Option.of(textChannel.getName(), textChannel.getId().toString()));
         }
-        SelectMenu selectMenu = SelectMenu.of("raid-size", selectOptions)
+        SelectMenu selectMenu = SelectMenu.of("destination-channel", selectOptions)
                 .withPlaceholder("Choose channel to post signup in!")
                 .withMaxValues(1).withMinValues(1);
         return ActionRow.of(selectMenu);
