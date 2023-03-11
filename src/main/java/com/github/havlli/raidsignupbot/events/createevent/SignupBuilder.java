@@ -2,9 +2,12 @@ package com.github.havlli.raidsignupbot.events.createevent;
 
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
@@ -245,7 +248,99 @@ public class SignupBuilder {
                         .contentOrNull("Test")
                         .build())
                 )
-                .flatMap(event1 -> awaitRaidSizeInteraction(message));
+                .flatMap(event1 -> awaitGuildChannelInteraction(message));
+    }
+
+    private Mono<Message> awaitGuildChannelInteraction(Message message) {
+        return eventDispatcher.on(SelectMenuInteractionEvent.class)
+                .filter(event -> event.getCustomId().equals("destination-channel") && event.getInteraction().getUser().equals(user))
+                .next()
+                .flatMap(event -> {
+                    System.out.printf("User %s.%s - SelectMenuInteraction invoked in private channel %s%n - raid-size",
+                            user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
+
+                    embedBuilder.setDestinationChannelId(event.getValues(), defaultChannel.getId().toString());
+                    return sendSoftReservePrompt(event, message);
+                })
+                .timeout(Duration.ofSeconds(interactionTimeoutSecond))
+                .onErrorResume(TimeoutException.class, ignore -> {
+                    System.out.println("SelectMenu Timed out - destination-channel");
+                    return message.edit(MessageEditSpec
+                            .builder()
+                            .contentOrNull("Timed out, please start over")
+                            .components(Collections.emptyList())
+                            .embeds(Collections.emptyList())
+                            .contentOrNull("Another content")
+                            .build());
+                });
+    }
+
+    private Mono<Message> sendSoftReservePrompt(SelectMenuInteractionEvent event, Message message) {
+        String messageId = message.getId().asString(); // Store ID of message before deleting it
+        System.out.println(messageId);
+
+        Button buttonYes = Button.primary("reserveYes","Yes");
+        Button buttonNo = Button.danger("reserveNo", "No");
+        ActionRow actionRow = ActionRow.of(buttonYes, buttonNo);
+
+        return event.deferEdit()
+                .then(event.editReply(InteractionReplyEditSpec.builder()
+                        .addEmbed(embedBuilder.getEmbedPreview())
+                        .addComponent(actionRow)
+                        .contentOrNull("Test")
+                        .build())
+                )
+                .flatMap(event1 -> awaitSoftReserveInteraction(message));
+    }
+
+    private Mono<Message> awaitSoftReserveInteraction(Message message) {
+        return eventDispatcher.on(ButtonInteractionEvent.class)
+                .filter(event -> event.getInteraction().getUser().equals(user))
+                .filter(event -> event.getCustomId().equals("reserveYes") || event.getCustomId().equals("reserveNo"))
+                .next()
+                .flatMap(event -> {
+                    if (event.getCustomId().equals("reserveYes")) {
+                        System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - reserveYes",
+                                user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
+                        embedBuilder.setReserveEnabled(true);
+                    } else {
+                        System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - reserveNo",
+                                user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
+                        embedBuilder.setReserveEnabled(false);
+                    }
+
+                    /*embedBuilder.setDestinationChannelId(event.getValues(), defaultChannel.getId().toString());*/
+                    return sendConfirmationPrompt(event, message);
+                })
+                .timeout(Duration.ofSeconds(interactionTimeoutSecond))
+                .onErrorResume(TimeoutException.class, ignore -> {
+                    System.out.println("SelectMenu Timed out - destination-channel");
+                    return message.edit(MessageEditSpec
+                            .builder()
+                            .contentOrNull("Timed out, please start over")
+                            .components(Collections.emptyList())
+                            .embeds(Collections.emptyList())
+                            .contentOrNull("Another content")
+                            .build());
+                });
+    }
+
+    private Mono<Message> sendConfirmationPrompt(ButtonInteractionEvent event, Message message) {
+        String messageId = message.getId().asString(); // Store ID of message before deleting it
+        System.out.println(messageId);
+
+        Button confirm = Button.primary("confirm","Confirm");
+        Button cancel = Button.danger("cancel", "Cancel");
+        ActionRow actionRow = ActionRow.of(confirm, cancel);
+
+        return event.deferEdit()
+                .then(event.editReply(InteractionReplyEditSpec.builder()
+                        .addEmbed(embedBuilder.getEmbedPreview())
+                        .addComponent(actionRow)
+                        .contentOrNull("Test")
+                        .build())
+                )
+                .flatMap(event1 -> Mono.empty().cast(Message.class));
     }
 
     private static Mono<Void> deleteMessage(Message message) {
