@@ -343,6 +343,44 @@ public class SignupBuilder {
                 .flatMap(event1 -> Mono.empty().cast(Message.class));
     }
 
+    private Mono<Message> awaitConfirmationInteraction(Message message) {
+        return eventDispatcher.on(ButtonInteractionEvent.class)
+                .filter(event -> event.getInteraction().getUser().equals(user))
+                .filter(event -> event.getCustomId().equals("cancel") || event.getCustomId().equals("confirm"))
+                .next()
+                .flatMap(event -> {
+                    if (event.getCustomId().equals("cancel")) {
+                        System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - cancel",
+                                user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
+                        return Mono.empty()
+                                .cast(Message.class);
+                    } else {
+                        System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - confirm",
+                                user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
+                        return Mono.empty()
+                                .cast(Message.class);
+                    }
+                })
+                .timeout(Duration.ofSeconds(interactionTimeoutSecond))
+                .onErrorResume(TimeoutException.class, ignore -> {
+                    System.out.println("SelectMenu Timed out - destination-channel");
+                    return message.edit(MessageEditSpec
+                            .builder()
+                            .contentOrNull("Timed out, please start over")
+                            .components(Collections.emptyList())
+                            .embeds(Collections.emptyList())
+                            .contentOrNull("Another content")
+                            .build());
+                });
+    }
+
+    private Mono<Void> cleanupMessages() {
+        for (Long id : messagesToClean) {
+
+        }
+        return Mono.empty();
+    }
+
     private static Mono<Void> deleteMessage(Message message) {
         return message.delete().onErrorResume(error -> {
             System.out.println("Failed to delete message " + message.getId().asString() + " : " + error.getMessage());
