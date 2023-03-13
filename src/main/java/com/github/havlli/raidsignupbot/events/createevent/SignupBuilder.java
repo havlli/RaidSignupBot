@@ -1,5 +1,6 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
@@ -11,10 +12,11 @@ import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.Channel;
+import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.PrivateChannel;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.InteractionReplyEditSpec;
+import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
 import reactor.core.publisher.Mono;
 
@@ -34,8 +36,8 @@ public class SignupBuilder {
     private final GatewayDiscordClient client;
     private final EventDispatcher eventDispatcher;
     private List<TextChannel> textChannels;
-    private Channel defaultChannel;
-    private EmbedBuilder embedBuilder;
+    private String defaultChannelId;
+    private final EmbedBuilder embedBuilder;
     private final int interactionTimeoutSecond = 30;
     private final List<Long> messagesToClean;
 
@@ -67,7 +69,9 @@ public class SignupBuilder {
     }
 
     private void fetchDefaultChannel() {
-        defaultChannel = event.getInteraction().getChannel().block();
+        defaultChannelId = event.getInteraction().getChannel()
+                .map(channel -> channel.getId().toString())
+                .block();
     }
 
     private Mono<Message> sendNamePrompt() {
@@ -135,7 +139,9 @@ public class SignupBuilder {
     }
 
     private Mono<Message> sendTimePrompt() {
-        String messagePrompt = "**Step 4**\nEnter the time (format: HH:mm)";
+
+
+        String messagePrompt = "**Step 4**\nEnter the time of the event in UTC timezone <t:currentUnixTimeUTC> (format: HH:mm)";
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt))
                 .flatMap(message -> awaitTimeInput(message));
@@ -259,7 +265,7 @@ public class SignupBuilder {
                     System.out.printf("User %s.%s - SelectMenuInteraction invoked in private channel %s%n - raid-size",
                             user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
 
-                    embedBuilder.setDestinationChannelId(event.getValues(), defaultChannel.getId().toString());
+                    embedBuilder.setDestinationChannelId(event.getValues(), defaultChannelId);
                     return sendSoftReservePrompt(event, message);
                 })
                 .timeout(Duration.ofSeconds(interactionTimeoutSecond))
@@ -340,7 +346,7 @@ public class SignupBuilder {
                         .contentOrNull("Test")
                         .build())
                 )
-                .flatMap(event1 -> Mono.empty().cast(Message.class));
+                .flatMap(event1 -> awaitConfirmationInteraction(message));
     }
 
     private Mono<Message> awaitConfirmationInteraction(Message message) {
@@ -352,13 +358,11 @@ public class SignupBuilder {
                     if (event.getCustomId().equals("cancel")) {
                         System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - cancel",
                                 user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
-                        return Mono.empty()
-                                .cast(Message.class);
+                        return finalizeProcess(event, message);
                     } else {
                         System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - confirm",
                                 user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
-                        return Mono.empty()
-                                .cast(Message.class);
+                        return finalizeProcess(event, message);
                     }
                 })
                 .timeout(Duration.ofSeconds(interactionTimeoutSecond))
@@ -372,6 +376,27 @@ public class SignupBuilder {
                             .contentOrNull("Another content")
                             .build());
                 });
+    }
+
+    private Mono<Message> finalizeProcess(ButtonInteractionEvent event, Message message) {
+        String messageId = message.getId().asString(); // Store ID of message before deleting it
+        System.out.println(messageId);
+
+
+        return event.deferEdit()
+                .then(event.editReply(InteractionReplyEditSpec.builder()
+                        .addEmbed(embedBuilder.getFinalEmbed())
+                        .build())
+                )
+                .flatMap(event1 -> this.event.getInteraction()
+                        .getGuild()
+                        .flatMap(guild -> guild.getChannelById(Snowflake.of(embedBuilder.getDestinationChannelId()))
+                                .cast(MessageChannel.class)
+                                .flatMap(channel -> channel.createMessage(MessageCreateSpec.builder()
+                                                .addEmbed(embedBuilder.getFinalEmbed())
+                                        .build()))
+                        )
+                );
     }
 
     private Mono<Void> cleanupMessages() {
