@@ -156,7 +156,9 @@ public class SignupBuilder {
                 .next()
                 .flatMap(message -> {
                     embedBuilder.setTime(message);
-                    return raidSelectPrompt();
+
+                    return cleanupMessages(message)
+                            .then(raidSelectPrompt());
                 })
                 .onErrorResume(DateTimeParseException.class, onError -> privateChannelMono
                         .flatMap(channel -> channel.createMessage("Invalid input, try again!"))
@@ -399,9 +401,12 @@ public class SignupBuilder {
                 );
     }
 
-    private Mono<Void> cleanupMessages() {
+    private Mono<Void> cleanupMessages(Message message) {
         for (Long id : messagesToClean) {
-
+            message.getChannel()
+                    .flatMap(channel -> channel.getMessageById(Snowflake.of(id)))
+                    .flatMap(SignupBuilder::deleteMessage)
+                    .subscribe();
         }
         return Mono.empty();
     }
