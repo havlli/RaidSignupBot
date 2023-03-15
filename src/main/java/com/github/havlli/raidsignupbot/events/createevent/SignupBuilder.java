@@ -1,5 +1,7 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
+import com.github.havlli.raidsignupbot.component.ActionRows;
+import com.github.havlli.raidsignupbot.component.EmbedBuilder;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
@@ -7,8 +9,6 @@ import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
@@ -16,7 +16,6 @@ import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.PrivateChannel;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.InteractionReplyEditSpec;
-import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
 import reactor.core.publisher.Mono;
 
@@ -38,7 +37,7 @@ public class SignupBuilder {
     private List<TextChannel> textChannels;
     private String defaultChannelId;
     private final EmbedBuilder embedBuilder;
-    private final int interactionTimeoutSecond = 30;
+    private final int interactionTimeoutSeconds;
     private final List<Long> messagesToClean;
 
 
@@ -48,8 +47,9 @@ public class SignupBuilder {
         this.eventDispatcher = event.getClient().getEventDispatcher();
         this.user = event.getInteraction().getUser();
         this.privateChannelMono = user.getPrivateChannel();
-        this.embedBuilder = new EmbedBuilder();
-        messagesToClean = new ArrayList<>();
+        this.embedBuilder = new EmbedBuilder(this.user);
+        this.messagesToClean = new ArrayList<>();
+        this.interactionTimeoutSeconds = 30;
     }
 
     public void startBuildProcess(){
@@ -139,8 +139,6 @@ public class SignupBuilder {
     }
 
     private Mono<Message> sendTimePrompt() {
-
-
         String messagePrompt = "**Step 4**\nEnter the time of the event in UTC timezone <t:currentUnixTimeUTC> (format: HH:mm)";
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt))
@@ -173,7 +171,7 @@ public class SignupBuilder {
 
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt)
-                        .withComponents(RaidSelectMenu.getRaidSelectMenu()))
+                        .withComponents(ActionRows.getRaidSelectMenu()))
                 .flatMap(message -> {
                     System.out.printf("Select Menu message id is %s%n", message.getId().asString());
 
@@ -191,7 +189,7 @@ public class SignupBuilder {
 
                     return sendRaidSizePrompt(event, message);
                 })
-                .timeout(Duration.ofSeconds(interactionTimeoutSecond))
+                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
                 .onErrorResume(TimeoutException.class, ignore -> {
                     System.out.println("SelectMenu Timed out - raid-select");
                     return message.edit(MessageEditSpec
@@ -213,7 +211,7 @@ public class SignupBuilder {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                                 .addEmbed(embedBuilder.getEmbedPreview())
-                                .addComponent(RaidSelectMenu.getRaidSizeSelect())
+                                .addComponent(ActionRows.getRaidSizeSelect())
                                 .contentOrNull("Test")
                         .build())
                 )
@@ -230,7 +228,7 @@ public class SignupBuilder {
 
                     return sendGuildChannelPrompt(event, message);
                 })
-                .timeout(Duration.ofSeconds(interactionTimeoutSecond))
+                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
                 .onErrorResume(TimeoutException.class, ignore -> {
                     System.out.println("SelectMenu Timed out - raid-size");
                     return message.edit(MessageEditSpec
@@ -252,7 +250,7 @@ public class SignupBuilder {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedBuilder.getEmbedPreview())
-                        .addComponent(RaidSelectMenu.getTextChannelSelect(textChannels))
+                        .addComponent(ActionRows.getTextChannelSelect(textChannels))
                         .contentOrNull("Test")
                         .build())
                 )
@@ -270,7 +268,7 @@ public class SignupBuilder {
                     embedBuilder.setDestinationChannelId(event.getValues(), defaultChannelId);
                     return sendSoftReservePrompt(event, message);
                 })
-                .timeout(Duration.ofSeconds(interactionTimeoutSecond))
+                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
                 .onErrorResume(TimeoutException.class, ignore -> {
                     System.out.println("SelectMenu Timed out - destination-channel");
                     return message.edit(MessageEditSpec
@@ -287,14 +285,10 @@ public class SignupBuilder {
         String messageId = message.getId().asString(); // Store ID of message before deleting it
         System.out.println(messageId);
 
-        Button buttonYes = Button.primary("reserveYes","Yes");
-        Button buttonNo = Button.danger("reserveNo", "No");
-        ActionRow actionRow = ActionRow.of(buttonYes, buttonNo);
-
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedBuilder.getEmbedPreview())
-                        .addComponent(actionRow)
+                        .addComponent(ActionRows.getReserveRow())
                         .contentOrNull("Test")
                         .build())
                 )
@@ -320,7 +314,7 @@ public class SignupBuilder {
                     /*embedBuilder.setDestinationChannelId(event.getValues(), defaultChannel.getId().toString());*/
                     return sendConfirmationPrompt(event, message);
                 })
-                .timeout(Duration.ofSeconds(interactionTimeoutSecond))
+                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
                 .onErrorResume(TimeoutException.class, ignore -> {
                     System.out.println("SelectMenu Timed out - destination-channel");
                     return message.edit(MessageEditSpec
@@ -337,14 +331,10 @@ public class SignupBuilder {
         String messageId = message.getId().asString(); // Store ID of message before deleting it
         System.out.println(messageId);
 
-        Button confirm = Button.primary("confirm","Confirm");
-        Button cancel = Button.danger("cancel", "Cancel");
-        ActionRow actionRow = ActionRow.of(confirm, cancel);
-
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedBuilder.getEmbedPreview())
-                        .addComponent(actionRow)
+                        .addComponent(ActionRows.getConfirmationRow())
                         .contentOrNull("Test")
                         .build())
                 )
@@ -367,7 +357,7 @@ public class SignupBuilder {
                         return finalizeProcess(event, message);
                     }
                 })
-                .timeout(Duration.ofSeconds(interactionTimeoutSecond))
+                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
                 .onErrorResume(TimeoutException.class, ignore -> {
                     System.out.println("SelectMenu Timed out - destination-channel");
                     return message.edit(MessageEditSpec
@@ -394,9 +384,15 @@ public class SignupBuilder {
                         .getGuild()
                         .flatMap(guild -> guild.getChannelById(Snowflake.of(embedBuilder.getDestinationChannelId()))
                                 .cast(MessageChannel.class)
-                                .flatMap(channel -> channel.createMessage(MessageCreateSpec.builder()
-                                                .addEmbed(embedBuilder.getFinalEmbed())
-                                        .build()))
+                                .flatMap(channel -> channel.createMessage("Generating event..."))
+                                .flatMap(finalMessage -> {
+                                    embedBuilder.setEmbedId(finalMessage.getId().asLong());
+                                    return finalMessage.edit(MessageEditSpec.builder()
+                                            .contentOrNull("")
+                                            .addEmbed(embedBuilder.getFinalEmbed())
+                                            .addAllComponents(embedBuilder.getRoleButtons())
+                                            .build());
+                                })
                         )
                 );
     }
