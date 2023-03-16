@@ -3,9 +3,9 @@ package com.github.havlli.raidsignupbot.events.createevent;
 import discord4j.core.object.entity.User;
 
 public class SignupUser {
-    private int fieldIndex;
-    private int order;
-    private User user;
+    private final int fieldIndex;
+    private final int order;
+    private final User user;
 
     public SignupUser(int order, User user, int fieldIndex) {
         this.fieldIndex = fieldIndex;
