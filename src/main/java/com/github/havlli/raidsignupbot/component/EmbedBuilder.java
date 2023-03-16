@@ -34,9 +34,9 @@ public class EmbedBuilder {
     private String raidSize;
     private String destinationChannelId;
     private boolean reserveEnabled;
-    private User author;
+    private final User author;
     private Long embedId;
-    private HashMap<Integer, String> fieldsMap = new HashMap<>(Map.of(
+    private final HashMap<Integer, String> fieldsMap = new HashMap<>(Map.of(
             -1, "Absence",
             -2, "Late",
             -3, "Tentative",
@@ -60,18 +60,25 @@ public class EmbedBuilder {
         this.author = author;
     }
 
-    public EmbedCreateSpec getFinalEmbed() {
+    private Long getTimestamp() {
         LocalDateTime dateTime = LocalDateTime.of(date, time);
-        long unixTimestamp = dateTime.atZone(ZoneOffset.UTC).toInstant().getEpochSecond();
+        return dateTime.atZone(ZoneOffset.UTC).toInstant().getEpochSecond();
+    }
+
+    private String getRaidSizeString() {
+        return signupUsers.size() + "/" + raidSize;
+    }
+
+    public EmbedCreateSpec getFinalEmbed() {
         String emptyString = "";
 
         return EmbedCreateSpec.builder()
                 .addField(emptyString,"Leader: " + author.getUsername() + " - ID: " + embedId, false)
                 .addField(name.toUpperCase(), emptyString,false)
                 .addField(emptyString, description, false)
-                .addField(emptyString, "<t:" + unixTimestamp + ">", true)
-                .addField(emptyString, time.toString(), true)
-                .addField(emptyString, "Player Count", true)
+                .addField(emptyString, "<t:" + getTimestamp() + ":D>", true)
+                .addField(emptyString, "<t:" + getTimestamp() + ":t>", true)
+                .addField(emptyString, getRaidSizeString(), true)
                 .addAllFields(getPopulatedFields())
                 .build();
     }
@@ -100,7 +107,8 @@ public class EmbedBuilder {
             long count = streamSignupUsers.count();
             if (count > 0) {
                 String fieldConcat = value + " (" + count + "):" + "\n" +
-                        streamSignupUsers
+                        signupUsers.stream()
+                                .filter(user -> user.getFieldIndex() == key)
                                 .map(user -> user.getUser().getUsername())
                                 .collect(Collectors.joining("\n"));
                 populatedFields.add(EmbedCreateFields.Field.of(fieldConcat, "", true));
