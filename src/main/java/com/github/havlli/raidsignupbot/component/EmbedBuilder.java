@@ -1,6 +1,8 @@
 package com.github.havlli.raidsignupbot.component;
 
 import com.github.havlli.raidsignupbot.events.createevent.SignupUser;
+import discord4j.core.event.EventDispatcher;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.LayoutComponent;
@@ -8,6 +10,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.InteractionReplyEditSpec;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -116,6 +119,36 @@ public class EmbedBuilder {
         });
 
         return populatedFields;
+    }
+
+    public void subscribeInteractions(EventDispatcher eventDispatcher) {
+
+        fieldsMap.forEach((key, value) -> {
+            String customId = embedId + "," + key;
+            eventDispatcher.on(ButtonInteractionEvent.class)
+                    .filter(event -> event.getCustomId().equals(customId))
+                    .flatMap(event -> {
+                        User user = event.getInteraction().getUser();
+                        int signupOrder = signupUsers.size() + 1;
+                        boolean alreadySigned = false;
+                        for (SignupUser signupUser : signupUsers) {
+                            if (signupUser.getUser().getId().equals(user.getId())) {
+                                alreadySigned = true;
+                                signupUser.setFieldIndex(key);
+                            }
+                        }
+                        if (!alreadySigned) {
+                            SignupUser signupUser = new SignupUser(signupOrder, user, key);
+                            signupUsers.add(signupUser);
+                        }
+
+                        return event.deferEdit()
+                                .then(event.editReply(InteractionReplyEditSpec.builder()
+                                                .addEmbed(this.getFinalEmbed())
+                                        .build())
+                                );
+                    }).subscribe();
+        });
     }
 
     public void setName(Message message) {
