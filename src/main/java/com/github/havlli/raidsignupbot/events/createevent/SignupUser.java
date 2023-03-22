@@ -3,7 +3,7 @@ package com.github.havlli.raidsignupbot.events.createevent;
 import discord4j.core.object.entity.User;
 
 public class SignupUser {
-    private final int fieldIndex;
+    private int fieldIndex;
     private final int order;
     private final User user;
 
@@ -15,6 +15,10 @@ public class SignupUser {
 
     public int getFieldIndex() {
         return fieldIndex;
+    }
+
+    public void setFieldIndex(int index) {
+        this.fieldIndex = index;
     }
 
     public int getOrder() {
