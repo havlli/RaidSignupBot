@@ -1,44 +1,28 @@
 package com.github.havlli.raidsignupbot.component;
 
 import com.github.havlli.raidsignupbot.events.createevent.SignupUser;
+import com.github.havlli.raidsignupbot.model.EmbedEvent;
+import com.github.havlli.raidsignupbot.model.EmbedEventMapper;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.LayoutComponent;
-import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionReplyEditSpec;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class EmbedBuilder {
-
-    private final List<EmbedCreateFields.Field> previewFields = new ArrayList<>();
     private final List<SignupUser> signupUsers = new ArrayList<>();
-    private final HashMap<Integer, SignupUser> signupUserMap = new HashMap<>();
-    private String name;
-    private String description;
-    private LocalDate date;
-    private LocalTime time;
-    private List<String> selectedRaids;
-    private String raidSize;
-    private String destinationChannelId;
-    private boolean reserveEnabled;
-    private final User author;
-    private Long embedId;
+    private final EmbedEvent embedEvent;
+    private final EmbedEventMapper embedEventMapper;
     private final HashMap<Integer, String> fieldsMap = new HashMap<>(Map.of(
             -1, "Absence",
             -2, "Late",
@@ -51,34 +35,31 @@ public class EmbedBuilder {
     ));
 
     public EmbedBuilder(User author) {
-        this.name = null;
-        this.description = null;
-        this.date = null;
-        this.time = null;
-        this.selectedRaids = null;
-        this.raidSize = null;
-        this.destinationChannelId = null;
-        this.reserveEnabled = false;
-        this.embedId = null;
-        this.author = author;
+        this.embedEvent = new EmbedEvent(author);
+        this.embedEventMapper = new EmbedEventMapper(embedEvent);
+    }
+
+    public EmbedEventMapper getMapper() {
+        return embedEventMapper;
     }
 
     private Long getTimestamp() {
-        LocalDateTime dateTime = LocalDateTime.of(date, time);
+        LocalDateTime dateTime = LocalDateTime.of(embedEvent.getDate(), embedEvent.getTime());
         return dateTime.atZone(ZoneOffset.UTC).toInstant().getEpochSecond();
     }
 
     private String getRaidSizeString() {
-        return signupUsers.size() + "/" + raidSize;
+        return signupUsers.size() + "/" + embedEvent.getMemberSize();
     }
 
     public EmbedCreateSpec getFinalEmbed() {
         String emptyString = "";
+        String leaderAndIdOfEvent = "Leader: " + embedEvent.getAuthor().getUsername() + " - ID: " + embedEvent.getEmbedId();
 
         return EmbedCreateSpec.builder()
-                .addField(emptyString,"Leader: " + author.getUsername() + " - ID: " + embedId, false)
-                .addField(name.toUpperCase(), emptyString,false)
-                .addField(emptyString, description, false)
+                .addField(emptyString, leaderAndIdOfEvent, false)
+                .addField(embedEvent.getName(), emptyString, false)
+                .addField(emptyString, embedEvent.getDescription(), false)
                 .addField(emptyString, "<t:" + getTimestamp() + ":D>", true)
                 .addField(emptyString, "<t:" + getTimestamp() + ":t>", true)
                 .addField(emptyString, getRaidSizeString(), true)
@@ -86,15 +67,58 @@ public class EmbedBuilder {
                 .build();
     }
 
-    public EmbedCreateSpec getEmbedPreview() {
-        return EmbedCreateSpec.builder().addAllFields(previewFields).build();
+    private final Map<String, EmbedCreateFields.Field> fieldPreviewMap = new LinkedHashMap<>();
+    public EmbedCreateSpec getPreview() {
+
+        if (embedEvent.getName() != null && !fieldPreviewMap.containsKey("name")) {
+            EmbedCreateFields.Field name =
+                    EmbedCreateFields.Field.of("Name", embedEvent.getName(), false);
+            fieldPreviewMap.put("name", name);
+        }
+        if (embedEvent.getDescription() != null && !fieldPreviewMap.containsKey("desc")) {
+            EmbedCreateFields.Field desc =
+                    EmbedCreateFields.Field.of("Description", embedEvent.getDescription(), false);
+            fieldPreviewMap.put("desc", desc);
+        }
+        if (embedEvent.getTime() != null && !fieldPreviewMap.containsKey("time")) {
+            EmbedCreateFields.Field time =
+                    EmbedCreateFields.Field.of("Time", embedEvent.getTime().toString(), true);
+            fieldPreviewMap.put("time", time);
+        }
+        if (embedEvent.getDate() != null && !fieldPreviewMap.containsKey("date")) {
+            EmbedCreateFields.Field date =
+                    EmbedCreateFields.Field.of("Date", embedEvent.getDate().toString(), true);
+            fieldPreviewMap.put("date", date);
+        }
+        if (embedEvent.getInstances() != null && !fieldPreviewMap.containsKey("instances")) {
+            EmbedCreateFields.Field instances =
+                    EmbedCreateFields.Field.of("Raids", String.join(", ", embedEvent.getInstances()), false);
+            fieldPreviewMap.put("instances", instances);
+        }
+        if (embedEvent.getMemberSize() != null && !fieldPreviewMap.containsKey("size")) {
+            EmbedCreateFields.Field memberSize =
+                    EmbedCreateFields.Field.of("Raid Size", embedEvent.getMemberSize(), false);
+            fieldPreviewMap.put("size", memberSize);
+        }
+        if (embedEvent.getDestinationChannelId() != null && !fieldPreviewMap.containsKey("channel")) {
+            EmbedCreateFields.Field channelId =
+                    EmbedCreateFields.Field.of("Destination channel ID", embedEvent.getDestinationChannelId().toString(), false);
+            fieldPreviewMap.put("channel", channelId);
+        }
+        if (embedEvent.isReservingEnabled() && !fieldPreviewMap.containsKey("reserve")) {
+            EmbedCreateFields.Field reservingEnabled =
+                    EmbedCreateFields.Field.of("SoftReserve Enabled", "", false);
+            fieldPreviewMap.put("reserve", reservingEnabled);
+        }
+
+        return EmbedCreateSpec.builder().addAllFields(fieldPreviewMap.values()).build();
     }
 
     public List<LayoutComponent> getRoleButtons() {
         List<Button> roleButtons = new ArrayList<>();
         List<Button> defaultButtons = new ArrayList<>();
         fieldsMap.forEach((key, value) -> {
-            String customId = embedId + "," + key;
+            String customId = embedEvent.getEmbedId() + "," + key;
             if (key > 0) roleButtons.add(Button.primary(customId, value));
             else defaultButtons.add(Button.secondary(customId, value));
         });
@@ -112,7 +136,7 @@ public class EmbedBuilder {
                 String fieldConcat = value + " (" + count + "):" + "\n" +
                         signupUsers.stream()
                                 .filter(user -> user.getFieldIndex() == key)
-                                .map(user -> user.getUser().getUsername())
+                                .map(user -> "`" + user.getOrder() + "`" + user.getUser().getUsername())
                                 .collect(Collectors.joining("\n"));
                 populatedFields.add(EmbedCreateFields.Field.of(fieldConcat, "", true));
             }
@@ -124,7 +148,7 @@ public class EmbedBuilder {
     public void subscribeInteractions(EventDispatcher eventDispatcher) {
 
         fieldsMap.forEach((key, value) -> {
-            String customId = embedId + "," + key;
+            String customId = embedEvent.getEmbedId() + "," + key;
             eventDispatcher.on(ButtonInteractionEvent.class)
                     .filter(event -> event.getCustomId().equals(customId))
                     .flatMap(event -> {
@@ -151,59 +175,7 @@ public class EmbedBuilder {
         });
     }
 
-    public void setName(Message message) {
-        this.name = message.getContent();
-        previewFields.add(EmbedCreateFields.Field.of("Name", name, false));
-    }
-
-    public void setDescription(Message message) {
-        this.description = message.getContent();
-        previewFields.add(EmbedCreateFields.Field.of("Description", description, false));
-    }
-
-    public void setDate(Message message) {
-        this.date = LocalDate.parse(message.getContent(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        previewFields.add(EmbedCreateFields.Field.of("Date", date.toString(), true));
-    }
-
-    public void setTime(Message message) {
-        this.time = LocalTime.parse(message.getContent(), DateTimeFormatter.ofPattern("HH:mm"));
-        previewFields.add(EmbedCreateFields.Field.of("Time", time.toString(), true));
-    }
-
-    public void setSelectedRaids(List<String> selectedRaids) {
-        this.selectedRaids = selectedRaids;
-        previewFields.add(EmbedCreateFields.Field.of("Raids", String.join(", ", selectedRaids), false));
-    }
-
-    public void setRaidSize(List<String> raidSize) {
-        String defaultSize = "25";
-        this.raidSize = raidSize
-                .stream()
-                .findFirst()
-                .orElse(defaultSize);
-        previewFields.add(EmbedCreateFields.Field.of("Maximum size", this.raidSize, false));
-    }
-
-    public void setDestinationChannelId(List<String> destinationChannelId, String defaultChannelId) {
-        this.destinationChannelId = destinationChannelId
-                .stream()
-                .findFirst()
-                .orElse(defaultChannelId);
-        previewFields.add(EmbedCreateFields.Field.of("Channel to post in", this.destinationChannelId, false));
-    }
-
-    public void setReserveEnabled(boolean reserveEnabled) {
-        this.reserveEnabled = reserveEnabled;
-        if (reserveEnabled) previewFields.add(EmbedCreateFields.Field.of("SoftReserve", "Enabled", false));
-        else previewFields.add(EmbedCreateFields.Field.of("SoftReserve", "Disabled", false));
-    }
-
-    public void setEmbedId(Long messageId) {
-        this.embedId = messageId;
-    }
-
-    public String getDestinationChannelId() {
-        return destinationChannelId;
+    public Long getDestinationChannelId() {
+        return embedEvent.getDestinationChannelId();
     }
 }
