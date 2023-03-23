@@ -70,7 +70,7 @@ public class SignupBuilder {
 
     private void fetchDefaultChannel() {
         defaultChannelId = event.getInteraction().getChannel()
-                .map(channel -> channel.getId().toString())
+                .map(channel -> channel.getId().asString())
                 .block();
     }
 
@@ -79,7 +79,7 @@ public class SignupBuilder {
 
         return privateChannelMono
                 .flatMap(privateChannel -> privateChannel.createMessage(messagePrompt))
-                .flatMap(message -> awaitNameInput(message));
+                .flatMap(this::awaitNameInput);
     }
 
     private Mono<Message> awaitNameInput(Message previousMessage) {
@@ -90,7 +90,7 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.setName(message);
+                    embedBuilder.getMapper().mapNameToEmbedEvent(message);
                     return sendDescriptionPrompt();
                 });
     }
@@ -98,7 +98,7 @@ public class SignupBuilder {
         String messagePrompt = "**Step 2**\nEnter description of the event!";
         return privateChannelMono
                 .flatMap(messageChannel -> messageChannel.createMessage(messagePrompt))
-                .flatMap(message -> awaitDescriptionInput(message));
+                .flatMap(this::awaitDescriptionInput);
     }
 
     private Mono<Message> awaitDescriptionInput(Message previousMessage) {
@@ -109,7 +109,7 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.setDescription(message);
+                    embedBuilder.getMapper().mapDescriptionToEmbedEvent(message);
                     return sendDatePrompt();
                 });
     }
@@ -118,7 +118,7 @@ public class SignupBuilder {
         String messagePrompt = "**Step 3**\nEnter the date (format: yyyy-MM-dd)";
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt))
-                .flatMap(message -> awaitDateInput(message));
+                .flatMap(this::awaitDateInput);
     }
 
     private Mono<Message> awaitDateInput(Message previousMessage) {
@@ -129,7 +129,7 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.setDate(message);
+                    embedBuilder.getMapper().mapDateToEmbedEvent(message);
                     return sendTimePrompt();
                 })
                 .onErrorResume(DateTimeParseException.class, onError -> privateChannelMono
@@ -142,7 +142,7 @@ public class SignupBuilder {
         String messagePrompt = "**Step 4**\nEnter the time of the event in UTC timezone <t:currentUnixTimeUTC> (format: HH:mm)";
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt))
-                .flatMap(message -> awaitTimeInput(message));
+                .flatMap(this::awaitTimeInput);
     }
 
     private Mono<Message> awaitTimeInput(Message previousMessage) {
@@ -153,8 +153,7 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.setTime(message);
-
+                    embedBuilder.getMapper().mapTimeToEmbedEvent(message);
                     return cleanupMessages(message)
                             .then(raidSelectPrompt());
                 })
@@ -206,11 +205,11 @@ public class SignupBuilder {
         String messageId = message.getId().asString(); // Store ID of message before deleting it
         System.out.println(messageId);
 
-        embedBuilder.setSelectedRaids(event.getValues());
+        embedBuilder.getMapper().mapInstancesToEmbedEvent(event.getValues());
 
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                                .addEmbed(embedBuilder.getEmbedPreview())
+                                .addEmbed(embedBuilder.getPreview())
                                 .addComponent(ActionRows.getRaidSizeSelect())
                                 .contentOrNull("Test")
                         .build())
@@ -245,11 +244,11 @@ public class SignupBuilder {
         String messageId = message.getId().asString(); // Store ID of message before deleting it
         System.out.println(messageId);
 
-        embedBuilder.setRaidSize(event.getValues());
+        embedBuilder.getMapper().mapMemberSizeToEmbedEvent(event.getValues(), "25");
 
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getEmbedPreview())
+                        .addEmbed(embedBuilder.getPreview())
                         .addComponent(ActionRows.getTextChannelSelect(textChannels))
                         .contentOrNull("Test")
                         .build())
@@ -265,7 +264,8 @@ public class SignupBuilder {
                     System.out.printf("User %s.%s - SelectMenuInteraction invoked in private channel %s%n - raid-size",
                             user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
 
-                    embedBuilder.setDestinationChannelId(event.getValues(), defaultChannelId);
+                    embedBuilder.getMapper().mapDestChannelIdToEmbedEvent(event.getValues(), defaultChannelId);
+
                     return sendSoftReservePrompt(event, message);
                 })
                 .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
@@ -287,7 +287,7 @@ public class SignupBuilder {
 
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getEmbedPreview())
+                        .addEmbed(embedBuilder.getPreview())
                         .addComponent(ActionRows.getReserveRow())
                         .contentOrNull("Test")
                         .build())
@@ -304,14 +304,13 @@ public class SignupBuilder {
                     if (event.getCustomId().equals("reserveYes")) {
                         System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - reserveYes",
                                 user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
-                        embedBuilder.setReserveEnabled(true);
+                        embedBuilder.getMapper().mapReservingToEmbedEvent(true);
                     } else {
                         System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - reserveNo",
                                 user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
-                        embedBuilder.setReserveEnabled(false);
+                        embedBuilder.getMapper().mapReservingToEmbedEvent(false);
                     }
 
-                    /*embedBuilder.setDestinationChannelId(event.getValues(), defaultChannel.getId().toString());*/
                     return sendConfirmationPrompt(event, message);
                 })
                 .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
@@ -333,7 +332,7 @@ public class SignupBuilder {
 
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getEmbedPreview())
+                        .addEmbed(embedBuilder.getPreview())
                         .addComponent(ActionRows.getConfirmationRow())
                         .contentOrNull("Test")
                         .build())
@@ -374,7 +373,6 @@ public class SignupBuilder {
         String messageId = message.getId().asString(); // Store ID of message before deleting it
         System.out.println(messageId);
 
-
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedBuilder.getFinalEmbed())
@@ -386,12 +384,17 @@ public class SignupBuilder {
                                 .cast(MessageChannel.class)
                                 .flatMap(channel -> channel.createMessage("Generating event..."))
                                 .flatMap(finalMessage -> {
-                                    embedBuilder.setEmbedId(finalMessage.getId().asLong());
+                                    embedBuilder.getMapper().mapEmbedIdToEmbedEvent(finalMessage);
+
                                     return finalMessage.edit(MessageEditSpec.builder()
                                             .contentOrNull("")
                                             .addEmbed(embedBuilder.getFinalEmbed())
                                             .addAllComponents(embedBuilder.getRoleButtons())
                                             .build());
+                                })
+                                .flatMap(process -> {
+                                    embedBuilder.subscribeInteractions(eventDispatcher);
+                                    return Mono.empty();
                                 })
                         )
                 );
