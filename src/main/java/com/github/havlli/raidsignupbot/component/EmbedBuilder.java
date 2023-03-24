@@ -45,7 +45,7 @@ public class EmbedBuilder {
 
     private Long getTimestamp() {
         LocalDateTime dateTime = LocalDateTime.of(embedEvent.getDate(), embedEvent.getTime());
-        return dateTime.atZone(ZoneOffset.UTC).toInstant().getEpochSecond();
+        return dateTime.toInstant(ZoneOffset.UTC).getEpochSecond();
     }
 
     private String getRaidSizeString() {
