@@ -20,6 +20,9 @@ import discord4j.core.spec.MessageEditSpec;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -139,7 +142,10 @@ public class SignupBuilder {
     }
 
     private Mono<Message> sendTimePrompt() {
-        String messagePrompt = "**Step 4**\nEnter the time of the event in UTC timezone <t:currentUnixTimeUTC> (format: HH:mm)";
+        Instant currentUtcTime = Instant.now();
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.of("UTC"));
+        String time = dtf.format(currentUtcTime);
+        String messagePrompt = "**Step 4**\nEnter the time of the event in UTC timezone " + time + " (format: HH:mm)";
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt))
                 .flatMap(this::awaitTimeInput);
