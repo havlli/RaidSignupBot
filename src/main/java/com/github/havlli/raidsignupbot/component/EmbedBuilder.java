@@ -133,12 +133,13 @@ public class EmbedBuilder {
                     .filter(user -> user.getFieldIndex() == key);
             long count = streamSignupUsers.count();
             if (count > 0) {
-                String fieldConcat = value + " (" + count + "):" + "\n" +
+                boolean isOneLineField = key < 0;
+                String fieldConcat = value + " (" + count + "):" + (isOneLineField ? " " : "\n") +
                         signupUsers.stream()
                                 .filter(user -> user.getFieldIndex() == key)
                                 .map(user -> "`" + user.getOrder() + "`" + user.getUser().getUsername())
-                                .collect(Collectors.joining("\n"));
-                populatedFields.add(EmbedCreateFields.Field.of(fieldConcat, "", true));
+                                .collect(Collectors.joining(isOneLineField ? ", " : "\n"));
+                populatedFields.add(EmbedCreateFields.Field.of(fieldConcat, "", !isOneLineField));
             }
         });
 
