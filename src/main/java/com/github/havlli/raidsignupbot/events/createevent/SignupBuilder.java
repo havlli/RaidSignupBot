@@ -82,12 +82,21 @@ public class SignupBuilder {
 
         return privateChannelMono
                 .flatMap(privateChannel -> privateChannel.createMessage(messagePrompt))
-                .flatMap(this::awaitNameInput);
+                .flatMap(previousMessage -> {
+                    messagesToClean.add(previousMessage.getId().asLong());
+                    return awaitNameInput();
+                })
+                .timeout(Duration.ofSeconds(15))
+                .onErrorResume(TimeoutException.class, ignore -> {
+                    System.out.println("SelectMenu Timed out - sendNamePrompt()");
+                    return privateChannelMono.flatMap(privateChannel -> {
+                        cleanupMessages();
+                        return privateChannel.createMessage("Interaction timed out, please start over!");
+                    });
+                });
     }
 
-    private Mono<Message> awaitNameInput(Message previousMessage) {
-        messagesToClean.add(previousMessage.getId().asLong());
-
+    private Mono<Message> awaitNameInput() {
         return eventDispatcher.on(MessageCreateEvent.class)
                 .map(MessageCreateEvent::getMessage)
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
@@ -101,12 +110,13 @@ public class SignupBuilder {
         String messagePrompt = "**Step 2**\nEnter description of the event!";
         return privateChannelMono
                 .flatMap(messageChannel -> messageChannel.createMessage(messagePrompt))
-                .flatMap(this::awaitDescriptionInput);
+                .flatMap(previousMessage -> {
+                    messagesToClean.add(previousMessage.getId().asLong());
+                    return awaitDescriptionInput();
+                });
     }
 
-    private Mono<Message> awaitDescriptionInput(Message previousMessage) {
-        messagesToClean.add(previousMessage.getId().asLong());
-
+    private Mono<Message> awaitDescriptionInput() {
         return eventDispatcher.on(MessageCreateEvent.class)
                 .map(MessageCreateEvent::getMessage)
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
@@ -121,12 +131,13 @@ public class SignupBuilder {
         String messagePrompt = "**Step 3**\nEnter the date (format: yyyy-MM-dd)";
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt))
-                .flatMap(this::awaitDateInput);
+                .flatMap(previousMessage -> {
+                    messagesToClean.add(previousMessage.getId().asLong());
+                    return awaitDateInput();
+                });
     }
 
-    private Mono<Message> awaitDateInput(Message previousMessage) {
-        messagesToClean.add(previousMessage.getId().asLong());
-
+    private Mono<Message> awaitDateInput() {
         return eventDispatcher.on(MessageCreateEvent.class)
                 .map(MessageCreateEvent::getMessage)
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
@@ -148,19 +159,20 @@ public class SignupBuilder {
         String messagePrompt = "**Step 4**\nEnter the time of the event in UTC timezone " + time + " (format: HH:mm)";
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt))
-                .flatMap(this::awaitTimeInput);
+                .flatMap(previousMessage -> {
+                    messagesToClean.add(previousMessage.getId().asLong());
+                    return awaitTimeInput();
+                });
     }
 
-    private Mono<Message> awaitTimeInput(Message previousMessage) {
-        messagesToClean.add(previousMessage.getId().asLong());
-
+    private Mono<Message> awaitTimeInput() {
         return eventDispatcher.on(MessageCreateEvent.class)
                 .map(MessageCreateEvent::getMessage)
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
                     embedBuilder.getMapper().mapTimeToEmbedEvent(message);
-                    return cleanupMessages(message)
+                    return cleanupMessages()
                             .then(raidSelectPrompt());
                 })
                 .onErrorResume(DateTimeParseException.class, onError -> privateChannelMono
@@ -170,18 +182,12 @@ public class SignupBuilder {
     }
 
     private Mono<Message> raidSelectPrompt() {
-
-        System.out.printf("Sending private message to user %s.%s%n" , user.getUsername(), user.getDiscriminator());
         String messagePrompt = "**Step 5**\nChoose which raids is this signup for:\nRequired 1 selection, maximum 3";
 
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt)
                         .withComponents(ActionRows.getRaidSelectMenu()))
-                .flatMap(message -> {
-                    System.out.printf("Select Menu message id is %s%n", message.getId().asString());
-
-                    return awaitRaidSelectInteraction(message);
-                });
+                .flatMap(this::awaitRaidSelectInteraction);
     }
 
     private Mono<Message> awaitRaidSelectInteraction(Message message) {
@@ -189,9 +195,7 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("raid-select") && event.getInteraction().getUser().equals(user))
                 .next()
                 .flatMap(event -> {
-                    System.out.printf("User %s.%s - SelectMenuInteraction invoked in private channel %s%n - raid-select",
-                            user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
-
+                    embedBuilder.getMapper().mapInstancesToEmbedEvent(event.getValues());
                     return sendRaidSizePrompt(event, message);
                 })
                 .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
@@ -208,11 +212,6 @@ public class SignupBuilder {
     }
 
     private Mono<Message> sendRaidSizePrompt(SelectMenuInteractionEvent event, Message message) {
-        String messageId = message.getId().asString(); // Store ID of message before deleting it
-        System.out.println(messageId);
-
-        embedBuilder.getMapper().mapInstancesToEmbedEvent(event.getValues());
-
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                                 .addEmbed(embedBuilder.getPreview())
@@ -228,30 +227,12 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("raid-size") && event.getInteraction().getUser().equals(user))
                 .next()
                 .flatMap(event -> {
-                    System.out.printf("User %s.%s - SelectMenuInteraction invoked in private channel %s%n - raid-size",
-                            user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
-
+                    embedBuilder.getMapper().mapMemberSizeToEmbedEvent(event.getValues(), "25");
                     return sendGuildChannelPrompt(event, message);
-                })
-                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
-                .onErrorResume(TimeoutException.class, ignore -> {
-                    System.out.println("SelectMenu Timed out - raid-size");
-                    return message.edit(MessageEditSpec
-                            .builder()
-                            .contentOrNull("Timed out, please start over")
-                            .components(Collections.emptyList())
-                            .embeds(Collections.emptyList())
-                            .contentOrNull("Another content")
-                            .build());
                 });
     }
 
     private Mono<Message> sendGuildChannelPrompt(SelectMenuInteractionEvent event, Message message) {
-        String messageId = message.getId().asString(); // Store ID of message before deleting it
-        System.out.println(messageId);
-
-        embedBuilder.getMapper().mapMemberSizeToEmbedEvent(event.getValues(), "25");
-
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedBuilder.getPreview())
@@ -267,30 +248,12 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("destination-channel") && event.getInteraction().getUser().equals(user))
                 .next()
                 .flatMap(event -> {
-                    System.out.printf("User %s.%s - SelectMenuInteraction invoked in private channel %s%n - raid-size",
-                            user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
-
                     embedBuilder.getMapper().mapDestChannelIdToEmbedEvent(event.getValues(), defaultChannelId);
-
                     return sendSoftReservePrompt(event, message);
-                })
-                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
-                .onErrorResume(TimeoutException.class, ignore -> {
-                    System.out.println("SelectMenu Timed out - destination-channel");
-                    return message.edit(MessageEditSpec
-                            .builder()
-                            .contentOrNull("Timed out, please start over")
-                            .components(Collections.emptyList())
-                            .embeds(Collections.emptyList())
-                            .contentOrNull("Another content")
-                            .build());
                 });
     }
 
     private Mono<Message> sendSoftReservePrompt(SelectMenuInteractionEvent event, Message message) {
-        String messageId = message.getId().asString(); // Store ID of message before deleting it
-        System.out.println(messageId);
-
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedBuilder.getPreview())
@@ -308,34 +271,15 @@ public class SignupBuilder {
                 .next()
                 .flatMap(event -> {
                     if (event.getCustomId().equals("reserveYes")) {
-                        System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - reserveYes",
-                                user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
                         embedBuilder.getMapper().mapReservingToEmbedEvent(true);
                     } else {
-                        System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - reserveNo",
-                                user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
                         embedBuilder.getMapper().mapReservingToEmbedEvent(false);
                     }
-
                     return sendConfirmationPrompt(event, message);
-                })
-                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
-                .onErrorResume(TimeoutException.class, ignore -> {
-                    System.out.println("SelectMenu Timed out - destination-channel");
-                    return message.edit(MessageEditSpec
-                            .builder()
-                            .contentOrNull("Timed out, please start over")
-                            .components(Collections.emptyList())
-                            .embeds(Collections.emptyList())
-                            .contentOrNull("Another content")
-                            .build());
                 });
     }
 
     private Mono<Message> sendConfirmationPrompt(ButtonInteractionEvent event, Message message) {
-        String messageId = message.getId().asString(); // Store ID of message before deleting it
-        System.out.println(messageId);
-
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedBuilder.getPreview())
@@ -353,32 +297,14 @@ public class SignupBuilder {
                 .next()
                 .flatMap(event -> {
                     if (event.getCustomId().equals("cancel")) {
-                        System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - cancel",
-                                user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
                         return finalizeProcess(event, message);
                     } else {
-                        System.out.printf("User %s.%s - ButtonInteractionEvent invoked in private channel %s%n - confirm",
-                                user.getUsername(), user.getDiscriminator(), event.getInteraction().getChannelId().asString());
                         return finalizeProcess(event, message);
                     }
-                })
-                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
-                .onErrorResume(TimeoutException.class, ignore -> {
-                    System.out.println("SelectMenu Timed out - destination-channel");
-                    return message.edit(MessageEditSpec
-                            .builder()
-                            .contentOrNull("Timed out, please start over")
-                            .components(Collections.emptyList())
-                            .embeds(Collections.emptyList())
-                            .contentOrNull("Another content")
-                            .build());
                 });
     }
 
     private Mono<Message> finalizeProcess(ButtonInteractionEvent event, Message message) {
-        String messageId = message.getId().asString(); // Store ID of message before deleting it
-        System.out.println(messageId);
-
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedBuilder.getFinalEmbed())
@@ -406,10 +332,10 @@ public class SignupBuilder {
                 );
     }
 
-    private Mono<Void> cleanupMessages(Message message) {
+    private Mono<Void> cleanupMessages() {
         for (Long id : messagesToClean) {
-            message.getChannel()
-                    .flatMap(channel -> channel.getMessageById(Snowflake.of(id)))
+            privateChannelMono
+                    .flatMap(privateChannel -> privateChannel.getMessageById(Snowflake.of(id)))
                     .flatMap(SignupBuilder::deleteMessage)
                     .subscribe();
         }
