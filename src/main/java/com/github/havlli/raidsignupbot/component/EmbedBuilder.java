@@ -139,7 +139,8 @@ public class EmbedBuilder {
                                 .filter(user -> user.getFieldIndex() == key)
                                 .map(user -> "`" + user.getOrder() + "`" + user.getUser().getUsername())
                                 .collect(Collectors.joining(isOneLineField ? ", " : "\n"));
-                populatedFields.add(EmbedCreateFields.Field.of(fieldConcat, "", !isOneLineField));
+                if (isOneLineField) populatedFields.add(EmbedCreateFields.Field.of("", fieldConcat, false));
+                else populatedFields.add(EmbedCreateFields.Field.of(fieldConcat, "", true));
             }
         });
 
