@@ -2,6 +2,7 @@ package com.github.havlli.raidsignupbot.events;
 
 import com.github.havlli.raidsignupbot.events.createevent.CreateEvent;
 import com.github.havlli.raidsignupbot.events.deleteevent.DeleteEvent;
+import com.github.havlli.raidsignupbot.events.onreadyevent.OnReadyEvent;
 import com.github.havlli.raidsignupbot.events.test.TestEvent;
 import discord4j.core.GatewayDiscordClient;
 
@@ -39,6 +40,7 @@ public class EventSubscriber {
     }
 
     private static void registerEvents() {
+        addEvent(new OnReadyEvent());
         addEvent(new TestEvent());
         addEvent(new CreateEvent());
         addEvent(new DeleteEvent());
