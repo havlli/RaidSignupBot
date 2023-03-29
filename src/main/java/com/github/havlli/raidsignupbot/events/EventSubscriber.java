@@ -10,19 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class EventSubscriber {
-    private static EventSubscriber singleton = null;
     private static List<EventHandler> eventHandlers = null;
 
-    private EventSubscriber() {
-    }
-
-    private static EventSubscriber getInstance() {
-        if (singleton == null) singleton = new EventSubscriber();
-        return singleton;
-    }
-
     private static List<EventHandler> getEventHandlers() {
-        getInstance();
         if (eventHandlers == null) eventHandlers = new ArrayList<>();
         return eventHandlers;
     }
