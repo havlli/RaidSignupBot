@@ -1,5 +1,6 @@
 package com.github.havlli.raidsignupbot.component;
 
+import com.github.havlli.raidsignupbot.database.Datasource;
 import com.github.havlli.raidsignupbot.events.createevent.SignupUser;
 import com.github.havlli.raidsignupbot.model.EmbedEvent;
 import com.github.havlli.raidsignupbot.model.EmbedEventMapper;
@@ -55,7 +56,7 @@ public class EmbedBuilder {
     public EmbedCreateSpec getFinalEmbed() {
         String emptyString = "";
         String leaderAndIdOfEvent = "Leader: " + embedEvent.getAuthor().getUsername() + " - ID: " + embedEvent.getEmbedId();
-
+        Datasource.getInstance().insertEmbedEvent(embedEvent);
         return EmbedCreateSpec.builder()
                 .addField(emptyString, leaderAndIdOfEvent, false)
                 .addField(embedEvent.getName(), emptyString, false)
