@@ -12,4 +12,5 @@ public class TableStructure {
     public static final String CLM_EMBED_EVENT_RESERVE = "reserve_enabled";
     public static final String CLM_EMBED_EVENT_DEST_CHANNEL = "dest_channel";
     public static final String CLM_EMBED_EVENT_AUTHOR = "author";
+    public static final String CLM_EMBED_EVENT_ACTIVE = "active";
 }
