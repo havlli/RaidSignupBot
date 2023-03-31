@@ -1,6 +1,4 @@
-package com.github.havlli.raidsignupbot.model;
-
-import discord4j.core.object.entity.User;
+package com.github.havlli.raidsignupbot.embedevent;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -16,11 +14,19 @@ public class EmbedEvent {
     private boolean reservingEnabled;
     private Long destinationChannelId;
     private Long embedId;
-    private final User author;
+    private String author;
+    private boolean active;
 
-    public EmbedEvent(User author) {
-        this.author = author;
+    public EmbedEvent() {
         reservingEnabled = false;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
     }
 
     public void setName(String name) {
@@ -95,7 +101,7 @@ public class EmbedEvent {
         return embedId;
     }
 
-    public User getAuthor() {
+    public String getAuthor() {
         return author;
     }
 }

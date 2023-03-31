@@ -1,9 +1,8 @@
-package com.github.havlli.raidsignupbot.component;
+package com.github.havlli.raidsignupbot.events.createevent;
 
-import com.github.havlli.raidsignupbot.database.Datasource;
-import com.github.havlli.raidsignupbot.events.createevent.SignupUser;
-import com.github.havlli.raidsignupbot.model.EmbedEvent;
-import com.github.havlli.raidsignupbot.model.EmbedEventMapper;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEventDAO;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEventMapper;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
@@ -36,8 +35,9 @@ public class EmbedBuilder {
     ));
 
     public EmbedBuilder(User author) {
-        this.embedEvent = new EmbedEvent(author);
+        this.embedEvent = new EmbedEvent();
         this.embedEventMapper = new EmbedEventMapper(embedEvent);
+        getMapper().mapUserToEmbedEvent(author);
     }
 
     public EmbedEventMapper getMapper() {
@@ -55,8 +55,8 @@ public class EmbedBuilder {
 
     public EmbedCreateSpec getFinalEmbed() {
         String emptyString = "";
-        String leaderAndIdOfEvent = "Leader: " + embedEvent.getAuthor().getUsername() + " - ID: " + embedEvent.getEmbedId();
-        Datasource.getInstance().insertEmbedEvent(embedEvent);
+        String leaderAndIdOfEvent = "Leader: " + embedEvent.getAuthor() + " - ID: " + embedEvent.getEmbedId();
+        EmbedEventDAO.insertEmbedEvent(embedEvent);
         return EmbedCreateSpec.builder()
                 .addField(emptyString, leaderAndIdOfEvent, false)
                 .addField(embedEvent.getName(), emptyString, false)
