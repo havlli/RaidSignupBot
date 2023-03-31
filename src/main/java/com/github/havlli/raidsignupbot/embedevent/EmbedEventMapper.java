@@ -1,6 +1,7 @@
-package com.github.havlli.raidsignupbot.model;
+package com.github.havlli.raidsignupbot.embedevent;
 
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.User;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -12,6 +13,10 @@ public class EmbedEventMapper {
 
     public EmbedEventMapper(EmbedEvent embedEvent) {
         this.embedEvent = embedEvent;
+    }
+
+    public void mapUserToEmbedEvent(User user) {
+        embedEvent.setAuthor(String.format("%s#%s", user.getUsername(), user.getDiscriminator()));
     }
 
     public void mapNameToEmbedEvent(Message message) {
