@@ -11,6 +11,11 @@ public class Query extends TableStructure {
             CLM_EMBED_EVENT_SIZE + "," +
             CLM_EMBED_EVENT_RESERVE + "," +
             CLM_EMBED_EVENT_DEST_CHANNEL + "," +
-            CLM_EMBED_EVENT_AUTHOR + ")" +
-            " VALUES (?,?,?,?,?,?,?,?,?)";
+            CLM_EMBED_EVENT_AUTHOR + "," +
+            CLM_EMBED_EVENT_ACTIVE + ")" +
+            " VALUES (?,?,?,?,?,?,?,?,?,?)";
+
+    public static final String SELECT_ACTIVE_EMBED_EVENTS =
+            "SELECT * FROM " + TBL_EMBED_EVENT +
+            " WHERE " + CLM_EMBED_EVENT_ACTIVE + " = 1";
 }
