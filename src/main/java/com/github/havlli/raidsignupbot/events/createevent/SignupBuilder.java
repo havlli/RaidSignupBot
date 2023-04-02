@@ -1,7 +1,6 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
 import com.github.havlli.raidsignupbot.component.ActionRows;
-import com.github.havlli.raidsignupbot.component.EmbedBuilder;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
@@ -86,7 +85,7 @@ public class SignupBuilder {
                     messagesToClean.add(previousMessage.getId().asLong());
                     return awaitNameInput();
                 })
-                .timeout(Duration.ofSeconds(15))
+                .timeout(Duration.ofSeconds(60))
                 .onErrorResume(TimeoutException.class, ignore -> {
                     System.out.println("SelectMenu Timed out - sendNamePrompt()");
                     return privateChannelMono.flatMap(privateChannel -> {
@@ -270,11 +269,7 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("reserveYes") || event.getCustomId().equals("reserveNo"))
                 .next()
                 .flatMap(event -> {
-                    if (event.getCustomId().equals("reserveYes")) {
-                        embedBuilder.getMapper().mapReservingToEmbedEvent(true);
-                    } else {
-                        embedBuilder.getMapper().mapReservingToEmbedEvent(false);
-                    }
+                    embedBuilder.getMapper().mapReservingToEmbedEvent(event.getCustomId().equals("reserveYes"));
                     return sendConfirmationPrompt(event, message);
                 });
     }
@@ -307,7 +302,7 @@ public class SignupBuilder {
     private Mono<Message> finalizeProcess(ButtonInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getFinalEmbed())
+                        .addEmbed(embedBuilder.getPreview())
                         .build())
                 )
                 .flatMap(event1 -> this.event.getInteraction()
