@@ -1,9 +1,6 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
-import com.github.havlli.raidsignupbot.database.DatabaseConnection;
-import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
-import com.github.havlli.raidsignupbot.database.Query;
-import com.github.havlli.raidsignupbot.database.TableStructure;
+import com.github.havlli.raidsignupbot.database.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -68,18 +65,18 @@ public class EmbedEventDAO {
 
     private static EmbedEvent mapEmbedEventFromResultSet(ResultSet resultSet) throws SQLException {
         EmbedEvent embedEvent = new EmbedEvent();
-        embedEvent.setEmbedId(resultSet.getLong(TableStructure.CLM_EMBED_EVENT_ID));
-        embedEvent.setName(resultSet.getString(TableStructure.CLM_EMBED_EVENT_NAME));
-        embedEvent.setDescription(resultSet.getString(TableStructure.CLM_EMBED_EVENT_DESC));
-        String[] datetime = resultSet.getString(TableStructure.CLM_EMBED_EVENT_DATETIME).split(" ");
+        embedEvent.setEmbedId(resultSet.getLong(EmbedEventColumn.ID.toString()));
+        embedEvent.setName(resultSet.getString(EmbedEventColumn.NAME.toString()));
+        embedEvent.setDescription(resultSet.getString(EmbedEventColumn.DESCRIPTION.toString()));
+        String[] datetime = resultSet.getString(EmbedEventColumn.DATE_TIME.toString()).split(" ");
         embedEvent.setDate(LocalDate.parse(datetime[0]));
         embedEvent.setTime(LocalTime.parse(datetime[1]));
-        embedEvent.setInstances(Arrays.stream(resultSet.getString(TableStructure.CLM_EMBED_EVENT_INSTANCES).split(", ")).toList());
-        embedEvent.setMemberSize(resultSet.getString(TableStructure.CLM_EMBED_EVENT_SIZE));
-        embedEvent.setReservingEnabled(resultSet.getInt(TableStructure.CLM_EMBED_EVENT_RESERVE) == 1);
-        embedEvent.setDestinationChannelId(resultSet.getLong(TableStructure.CLM_EMBED_EVENT_DEST_CHANNEL));
-        embedEvent.setAuthor(resultSet.getString(TableStructure.CLM_EMBED_EVENT_AUTHOR));
-        embedEvent.setActive(resultSet.getInt(TableStructure.CLM_EMBED_EVENT_ACTIVE) == 1);
+        embedEvent.setInstances(Arrays.stream(resultSet.getString(EmbedEventColumn.INSTANCES.toString()).split(", ")).toList());
+        embedEvent.setMemberSize(resultSet.getString(EmbedEventColumn.MEMBER_SIZE.toString()));
+        embedEvent.setReservingEnabled(resultSet.getInt(EmbedEventColumn.RESERVE_ENABLED.toString()) == 1);
+        embedEvent.setDestinationChannelId(resultSet.getLong(EmbedEventColumn.DESTINATION_CHANNEL.toString()));
+        embedEvent.setAuthor(resultSet.getString(EmbedEventColumn.AUTHOR.toString()));
+        embedEvent.setActive(resultSet.getInt(EmbedEventColumn.ACTIVE.toString()) == 1);
         return embedEvent;
     }
 }
