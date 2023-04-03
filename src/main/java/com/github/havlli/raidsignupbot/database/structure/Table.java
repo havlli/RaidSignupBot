@@ -1,7 +1,8 @@
-package com.github.havlli.raidsignupbot.database;
+package com.github.havlli.raidsignupbot.database.structure;
 
 public enum Table {
-    EMBED_EVENT("embed_event");
+    EMBED_EVENT("Embed_event"),
+    SIGNUP_USER("Signup_user");
 
     private final String tableName;
 

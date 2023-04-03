@@ -1,5 +1,8 @@
 package com.github.havlli.raidsignupbot.database;
 
+import com.github.havlli.raidsignupbot.database.structure.EmbedEventColumn;
+import com.github.havlli.raidsignupbot.database.structure.Table;
+
 public class Query {
     public static final String INSERT_EMBED_EVENT =
             "INSERT INTO "+ Table.EMBED_EVENT +
