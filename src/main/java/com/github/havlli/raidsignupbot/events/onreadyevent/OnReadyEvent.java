@@ -1,6 +1,8 @@
 package com.github.havlli.raidsignupbot.events.onreadyevent;
 
+import com.github.havlli.raidsignupbot.embedevent.EmbedEventDataset;
 import com.github.havlli.raidsignupbot.events.EventHandler;
+import com.github.havlli.raidsignupbot.events.createevent.EmbedBuilder;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import reactor.core.publisher.Mono;
@@ -17,6 +19,12 @@ public class OnReadyEvent implements EventHandler {
 
     @Override
     public Mono<?> handleEvent(Event event) {
+
+        EmbedEventDataset.getInstance().getData().forEach(embedEvent -> {
+            EmbedBuilder embedBuilder = new EmbedBuilder(embedEvent);
+            embedBuilder.subscribeInteractions(event.getClient().getEventDispatcher());
+        });
+
         System.out.println("Scheduler registered");
         Scheduler scheduler = Schedulers.newSingle("EmbedScheduler");
 
@@ -29,5 +37,9 @@ public class OnReadyEvent implements EventHandler {
 
     private static void scheduledTimeCheck() {
         System.out.println("Scheduled check running");
+    }
+
+    private static Mono<Void> loadSignupInteractions(Event event) {
+        return Mono.empty();
     }
 }
