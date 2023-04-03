@@ -1,16 +1,16 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
-import discord4j.core.object.entity.User;
-
 public class SignupUser {
     private int fieldIndex;
     private final int order;
-    private final User user;
+    private final String username;
+    private final String id;
 
-    public SignupUser(int order, User user, int fieldIndex) {
+    public SignupUser(int order, String userId, String username, int fieldIndex) {
         this.fieldIndex = fieldIndex;
         this.order = order;
-        this.user = user;
+        this.username = username;
+        this.id = userId;
     }
 
     public int getFieldIndex() {
@@ -25,7 +25,11 @@ public class SignupUser {
         return order;
     }
 
-    public User getUser() {
-        return user;
+    public String getUsername() {
+        return username;
+    }
+
+    public String getId() {
+        return id;
     }
 }
