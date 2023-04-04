@@ -1,6 +1,7 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
 import com.github.havlli.raidsignupbot.database.*;
+import com.github.havlli.raidsignupbot.database.structure.EmbedEventColumn;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,6 +18,7 @@ public class EmbedEventDAO {
     public static void insertEmbedEvent(EmbedEvent embedEvent) {
         try (Connection connection = DatabaseConnection.getConnection(jdbcProvider);
              PreparedStatement insertEmbedEventPrep = createInsertEmbedEventPrep(connection, embedEvent)) {
+
             int affectedRows = insertEmbedEventPrep.executeUpdate();
             if (affectedRows != 1) {
                 System.out.println("Couldn't insert new EmbedEvent");
