@@ -23,4 +23,8 @@ public class EmbedEventDataset {
     public HashSet<EmbedEvent> getData() {
         return embedEventHashSet;
     }
+
+    public void addEmbedEvent(EmbedEvent embedEvent) {
+        embedEventHashSet.add(embedEvent);
+    }
 }
