@@ -1,7 +1,10 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
+import com.github.havlli.raidsignupbot.events.createevent.SignupUser;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class EmbedEvent {
@@ -16,9 +19,11 @@ public class EmbedEvent {
     private Long embedId;
     private String author;
     private boolean active;
+    private List<SignupUser> signupUsers;
 
     public EmbedEvent() {
         reservingEnabled = false;
+        signupUsers = new ArrayList<>();
     }
 
     public void setActive(boolean active) {
@@ -103,5 +108,17 @@ public class EmbedEvent {
 
     public String getAuthor() {
         return author;
+    }
+
+    public List<SignupUser> getSignupUsers() {
+        return signupUsers;
+    }
+
+    public void addSignupUser(SignupUser signupUser) {
+        signupUsers.add(signupUser);
+    }
+
+    public void removeSignupUser(SignupUser signupUser) {
+        signupUsers.remove(signupUser);
     }
 }
