@@ -1,6 +1,7 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
 import com.github.havlli.raidsignupbot.component.ActionRows;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
@@ -49,7 +50,8 @@ public class SignupBuilder {
         this.eventDispatcher = event.getClient().getEventDispatcher();
         this.user = event.getInteraction().getUser();
         this.privateChannelMono = user.getPrivateChannel();
-        this.embedBuilder = new EmbedBuilder(this.user);
+        this.embedBuilder = new EmbedBuilder(new EmbedEvent());
+        embedBuilder.getMapper().mapUserToEmbedEvent(user);
         this.messagesToClean = new ArrayList<>();
         this.interactionTimeoutSeconds = 30;
     }
@@ -320,6 +322,7 @@ public class SignupBuilder {
                                             .build());
                                 })
                                 .flatMap(process -> {
+                                    embedBuilder.saveToDatabase();
                                     embedBuilder.subscribeInteractions(eventDispatcher);
                                     return Mono.empty();
                                 })
