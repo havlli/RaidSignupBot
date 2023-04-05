@@ -1,6 +1,8 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
-import com.github.havlli.raidsignupbot.database.*;
+import com.github.havlli.raidsignupbot.database.DatabaseConnection;
+import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
+import com.github.havlli.raidsignupbot.database.Query;
 import com.github.havlli.raidsignupbot.database.structure.EmbedEventColumn;
 
 import java.sql.Connection;
@@ -59,7 +61,7 @@ public class EmbedEventDAO {
             return embedEventHashSet;
         } catch (SQLException e) {
             System.out.println("Couldn't process PreparedStatement selectActiveEmbedEvents: " + e.getMessage());
-            return null;
+            return new HashSet<>();
         } finally {
             DatabaseConnection.closeConnection(jdbcProvider);
         }
@@ -79,6 +81,7 @@ public class EmbedEventDAO {
         embedEvent.setDestinationChannelId(resultSet.getLong(EmbedEventColumn.DESTINATION_CHANNEL.toString()));
         embedEvent.setAuthor(resultSet.getString(EmbedEventColumn.AUTHOR.toString()));
         embedEvent.setActive(resultSet.getInt(EmbedEventColumn.ACTIVE.toString()) == 1);
+
         return embedEvent;
     }
 }
