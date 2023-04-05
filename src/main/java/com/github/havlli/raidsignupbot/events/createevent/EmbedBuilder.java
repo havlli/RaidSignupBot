@@ -153,17 +153,20 @@ public class EmbedBuilder {
                     .filter(event -> event.getCustomId().equals(customId))
                     .flatMap(event -> {
                         User user = event.getInteraction().getUser();
+                        String embedEventId = embedEvent.getEmbedId().toString();
                         int signupOrder = signupUsers.size() + 1;
                         boolean alreadySigned = false;
                         for (SignupUser signupUser : signupUsers) {
                             if (signupUser.getId().equals(user.getId().asString())) {
                                 alreadySigned = true;
                                 signupUser.setFieldIndex(key);
+                                SignupUserDAO.updateSignupUserFieldIndex(signupUser.getId(), key, embedEventId);
                             }
                         }
                         if (!alreadySigned) {
                             SignupUser signupUser = new SignupUser(signupOrder, user.getId().asString(), user.getUsername(), key);
                             signupUsers.add(signupUser);
+                            SignupUserDAO.insertSignupUser(signupUser, embedEventId);
                         }
 
                         return event.deferEdit()
