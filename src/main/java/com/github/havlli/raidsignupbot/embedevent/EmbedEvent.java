@@ -111,7 +111,12 @@ public class EmbedEvent {
     }
 
     public List<SignupUser> getSignupUsers() {
-        return signupUsers;
+        if (signupUsers == null) return new ArrayList<>();
+        else return signupUsers;
+    }
+
+    public void setSignupUsers(List<SignupUser> signupUserList) {
+        this.signupUsers = signupUserList;
     }
 
     public void addSignupUser(SignupUser signupUser) {
