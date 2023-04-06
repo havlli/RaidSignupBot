@@ -30,8 +30,6 @@ public class EmbedEventDAO {
             }
         } catch (SQLException e) {
             System.out.println("Couldn't process PreparedStatement insertEmbedEventPrep: " + e.getMessage());
-        } finally {
-            DatabaseConnection.closeConnection(provider);
         }
     }
 
@@ -65,8 +63,6 @@ public class EmbedEventDAO {
         } catch (SQLException e) {
             System.out.println("Couldn't process PreparedStatement selectActiveEmbedEvents: " + e.getMessage());
             return new HashSet<>();
-        } finally {
-            DatabaseConnection.closeConnection(provider);
         }
     }
 
