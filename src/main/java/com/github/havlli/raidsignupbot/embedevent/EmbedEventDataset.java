@@ -9,7 +9,9 @@ import java.util.List;
 
 public class EmbedEventDataset {
     private static EmbedEventDataset singleton = null;
+    private static HashSet<EmbedEvent> embedEventHashSet;
     private EmbedEventDataset() {
+        embedEventHashSet = new HashSet<>();
         populateEmbedEventHashSet();
         forEachEmbedEventPopulateSignupUserList();
     }
@@ -18,8 +20,6 @@ public class EmbedEventDataset {
         if(singleton == null) singleton = new EmbedEventDataset();
         return singleton;
     }
-
-    private static HashSet<EmbedEvent> embedEventHashSet = new HashSet<>();
 
     private void populateEmbedEventHashSet() {
         EmbedEventDAO embedEventDAO = new EmbedEventDAO(new JdbcConnectionProvider());
