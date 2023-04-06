@@ -1,5 +1,6 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
+import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventDAO;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventDataset;
@@ -62,7 +63,8 @@ public class EmbedBuilder {
     }
 
     public void saveToDatabase() {
-        EmbedEventDAO.insertEmbedEvent(embedEvent);
+        EmbedEventDAO embedEventDAO = new EmbedEventDAO(new JdbcConnectionProvider());
+        embedEventDAO.insertEmbedEvent(embedEvent);
         EmbedEventDataset.getInstance().addEmbedEvent(embedEvent);
     }
 
