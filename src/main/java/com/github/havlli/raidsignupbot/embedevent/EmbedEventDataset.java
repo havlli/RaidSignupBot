@@ -1,5 +1,6 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
+import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
 import com.github.havlli.raidsignupbot.events.createevent.SignupUser;
 import com.github.havlli.raidsignupbot.events.createevent.SignupUserDAO;
 
@@ -9,7 +10,6 @@ import java.util.List;
 public class EmbedEventDataset {
     private static EmbedEventDataset singleton = null;
     private EmbedEventDataset() {
-        embedEventHashSet = new HashSet<>();
         populateEmbedEventHashSet();
         forEachEmbedEventPopulateSignupUserList();
     }
@@ -19,10 +19,11 @@ public class EmbedEventDataset {
         return singleton;
     }
 
-    private static HashSet<EmbedEvent> embedEventHashSet;
+    private static HashSet<EmbedEvent> embedEventHashSet = new HashSet<>();
 
     private void populateEmbedEventHashSet() {
-        embedEventHashSet = EmbedEventDAO.fetchActiveEmbedEvents();
+        EmbedEventDAO embedEventDAO = new EmbedEventDAO(new JdbcConnectionProvider());
+        embedEventHashSet = embedEventDAO.fetchActiveEmbedEvents();
     }
 
     private void forEachEmbedEventPopulateSignupUserList() {
