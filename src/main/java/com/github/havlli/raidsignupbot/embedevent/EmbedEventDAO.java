@@ -1,7 +1,7 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
+import com.github.havlli.raidsignupbot.database.ConnectionProvider;
 import com.github.havlli.raidsignupbot.database.DatabaseConnection;
-import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
 import com.github.havlli.raidsignupbot.database.Query;
 import com.github.havlli.raidsignupbot.database.structure.EmbedEventColumn;
 
@@ -15,10 +15,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 public class EmbedEventDAO {
-    private static final JdbcConnectionProvider jdbcProvider = new JdbcConnectionProvider();
+    private final ConnectionProvider provider;
+    public EmbedEventDAO(ConnectionProvider provider) {
+        this.provider = provider;
+    }
 
-    public static void insertEmbedEvent(EmbedEvent embedEvent) {
-        try (Connection connection = DatabaseConnection.getConnection(jdbcProvider);
+    public void insertEmbedEvent(EmbedEvent embedEvent) {
+        try (Connection connection = DatabaseConnection.getConnection(provider);
              PreparedStatement insertEmbedEventPrep = createInsertEmbedEventPrep(connection, embedEvent)) {
 
             int affectedRows = insertEmbedEventPrep.executeUpdate();
@@ -28,7 +31,7 @@ public class EmbedEventDAO {
         } catch (SQLException e) {
             System.out.println("Couldn't process PreparedStatement insertEmbedEventPrep: " + e.getMessage());
         } finally {
-            DatabaseConnection.closeConnection(jdbcProvider);
+            DatabaseConnection.closeConnection(provider);
         }
     }
 
@@ -47,9 +50,9 @@ public class EmbedEventDAO {
         return insertEmbedEventPrep;
     }
 
-    public static HashSet<EmbedEvent> fetchActiveEmbedEvents() {
+    public HashSet<EmbedEvent> fetchActiveEmbedEvents() {
         HashSet<EmbedEvent> embedEventHashSet = new HashSet<>();
-        try (Connection connection = DatabaseConnection.getConnection(jdbcProvider);
+        try (Connection connection = DatabaseConnection.getConnection(provider);
              PreparedStatement selectActiveEmbedEvents = connection.prepareStatement(Query.SELECT_ACTIVE_EMBED_EVENTS);
              ResultSet resultSet = selectActiveEmbedEvents.executeQuery()) {
 
@@ -63,7 +66,7 @@ public class EmbedEventDAO {
             System.out.println("Couldn't process PreparedStatement selectActiveEmbedEvents: " + e.getMessage());
             return new HashSet<>();
         } finally {
-            DatabaseConnection.closeConnection(jdbcProvider);
+            DatabaseConnection.closeConnection(provider);
         }
     }
 
