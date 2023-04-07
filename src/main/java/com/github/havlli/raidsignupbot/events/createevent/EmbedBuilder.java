@@ -18,9 +18,7 @@ import discord4j.core.spec.InteractionReplyEditSpec;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,6 +49,7 @@ public class EmbedBuilder {
     public EmbedCreateSpec getFinalEmbed() {
         String emptyString = "";
         String leaderAndIdOfEvent = "Leader: " + embedEvent.getAuthor() + " - ID: " + embedEvent.getEmbedId();
+
         return EmbedCreateSpec.builder()
                 .addField(emptyString, leaderAndIdOfEvent, false)
                 .addField(embedEvent.getName(), emptyString, false)
@@ -68,51 +67,34 @@ public class EmbedBuilder {
         EmbedEventDataset.getInstance().addEmbedEvent(embedEvent);
     }
 
-    private final Map<String, EmbedCreateFields.Field> fieldPreviewMap = new LinkedHashMap<>();
+    private final List<EmbedCreateFields.Field> fieldList = new ArrayList<>();
+
     public EmbedCreateSpec getPreview() {
+        addFieldIfNotPresent("Name", embedEvent.getName(), false);
+        addFieldIfNotPresent("Description", embedEvent.getDescription(), false);
+        addFieldIfNotPresent("Time", embedEvent.getTime() != null ? embedEvent.getTime().toString() : null, true);
+        addFieldIfNotPresent("Date", embedEvent.getDate() != null ? embedEvent.getDate().toString() : null, true);
+        addFieldIfNotPresent("Raids", embedEvent.getInstances() != null ? String.join(", ", embedEvent.getInstances()) : null, false);
+        addFieldIfNotPresent("Raid Size", embedEvent.getMemberSize(), false);
+        addFieldIfNotPresent("Destination channel ID", embedEvent.getDestinationChannelId() != null ? embedEvent.getDestinationChannelId().toString() : null, false);
+        if (embedEvent.isReservingEnabled()) {
+            EmbedCreateFields.Field reservingEnabled = EmbedCreateFields.Field.of("SoftReserve Enabled", "", false);
+            addFieldIfNotPresent(reservingEnabled);
+        }
+        return EmbedCreateSpec.builder().addAllFields(fieldList).build();
+    }
 
-        if (embedEvent.getName() != null && !fieldPreviewMap.containsKey("name")) {
-            EmbedCreateFields.Field name =
-                    EmbedCreateFields.Field.of("Name", embedEvent.getName(), false);
-            fieldPreviewMap.put("name", name);
+    private void addFieldIfNotPresent(String name, String value, boolean inline) {
+        if (value != null && fieldList.stream().noneMatch(field -> field.name().equals(name))) {
+            EmbedCreateFields.Field field = EmbedCreateFields.Field.of(name, value, inline);
+            fieldList.add(field);
         }
-        if (embedEvent.getDescription() != null && !fieldPreviewMap.containsKey("desc")) {
-            EmbedCreateFields.Field desc =
-                    EmbedCreateFields.Field.of("Description", embedEvent.getDescription(), false);
-            fieldPreviewMap.put("desc", desc);
-        }
-        if (embedEvent.getTime() != null && !fieldPreviewMap.containsKey("time")) {
-            EmbedCreateFields.Field time =
-                    EmbedCreateFields.Field.of("Time", embedEvent.getTime().toString(), true);
-            fieldPreviewMap.put("time", time);
-        }
-        if (embedEvent.getDate() != null && !fieldPreviewMap.containsKey("date")) {
-            EmbedCreateFields.Field date =
-                    EmbedCreateFields.Field.of("Date", embedEvent.getDate().toString(), true);
-            fieldPreviewMap.put("date", date);
-        }
-        if (embedEvent.getInstances() != null && !fieldPreviewMap.containsKey("instances")) {
-            EmbedCreateFields.Field instances =
-                    EmbedCreateFields.Field.of("Raids", String.join(", ", embedEvent.getInstances()), false);
-            fieldPreviewMap.put("instances", instances);
-        }
-        if (embedEvent.getMemberSize() != null && !fieldPreviewMap.containsKey("size")) {
-            EmbedCreateFields.Field memberSize =
-                    EmbedCreateFields.Field.of("Raid Size", embedEvent.getMemberSize(), false);
-            fieldPreviewMap.put("size", memberSize);
-        }
-        if (embedEvent.getDestinationChannelId() != null && !fieldPreviewMap.containsKey("channel")) {
-            EmbedCreateFields.Field channelId =
-                    EmbedCreateFields.Field.of("Destination channel ID", embedEvent.getDestinationChannelId().toString(), false);
-            fieldPreviewMap.put("channel", channelId);
-        }
-        if (embedEvent.isReservingEnabled() && !fieldPreviewMap.containsKey("reserve")) {
-            EmbedCreateFields.Field reservingEnabled =
-                    EmbedCreateFields.Field.of("SoftReserve Enabled", "", false);
-            fieldPreviewMap.put("reserve", reservingEnabled);
-        }
+    }
 
-        return EmbedCreateSpec.builder().addAllFields(fieldPreviewMap.values()).build();
+    private void addFieldIfNotPresent(EmbedCreateFields.Field field) {
+        if (!fieldList.contains(field)) {
+            fieldList.add(field);
+        }
     }
 
     public List<LayoutComponent> getRoleButtons() {
