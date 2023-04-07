@@ -1,35 +1,42 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
+import com.github.havlli.raidsignupbot.database.ConnectionProvider;
 import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
-import com.github.havlli.raidsignupbot.events.createevent.SignupUser;
-import com.github.havlli.raidsignupbot.events.createevent.SignupUserDAO;
+import com.github.havlli.raidsignupbot.signupuser.SignupUser;
+import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
 
 import java.util.HashSet;
 import java.util.List;
 
-public class EmbedEventDataset {
-    private static EmbedEventDataset singleton = null;
+public class EmbedEventPersistence {
+    private static EmbedEventPersistence singleton = null;
     private static HashSet<EmbedEvent> embedEventHashSet;
-    private EmbedEventDataset() {
+    private final EmbedEventDAO embedEventDAO;
+    private final SignupUserDAO signupUserDAO;
+    private EmbedEventPersistence(EmbedEventDAO embedEventDAO, SignupUserDAO signupUserDAO) {
+        this.embedEventDAO = embedEventDAO;
+        this.signupUserDAO = signupUserDAO;
         embedEventHashSet = new HashSet<>();
         populateEmbedEventHashSet();
         forEachEmbedEventPopulateSignupUserList();
     }
 
-    public static EmbedEventDataset getInstance() {
-        if(singleton == null) singleton = new EmbedEventDataset();
+    public static EmbedEventPersistence getInstance() {
+        if(singleton == null) {
+            ConnectionProvider provider = new JdbcConnectionProvider();
+            singleton = new EmbedEventPersistence(new EmbedEventDAO(provider), new SignupUserDAO(provider));
+        }
         return singleton;
     }
 
     private void populateEmbedEventHashSet() {
-        EmbedEventDAO embedEventDAO = new EmbedEventDAO(new JdbcConnectionProvider());
         embedEventHashSet = embedEventDAO.fetchActiveEmbedEvents();
     }
 
     private void forEachEmbedEventPopulateSignupUserList() {
         embedEventHashSet.forEach(embedEvent -> {
             String embedEventId = embedEvent.getEmbedId().toString();
-            List<SignupUser> signupUserList = SignupUserDAO.selectSignupUsersById(embedEventId);
+            List<SignupUser> signupUserList = signupUserDAO.selectSignupUsersById(embedEventId);
             embedEvent.setSignupUsers(signupUserList);
         });
     }
