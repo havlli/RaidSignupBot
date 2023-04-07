@@ -15,40 +15,40 @@ public class EmbedEventMapper {
         this.embedEvent = embedEvent;
     }
 
-    public void mapUserToEmbedEvent(User user) {
+    public void mapUserFromMessage(User user) {
         embedEvent.setAuthor(String.format("%s#%s", user.getUsername(), user.getDiscriminator()));
     }
 
-    public void mapNameToEmbedEvent(Message message) {
+    public void mapNameFromMessage(Message message) {
         embedEvent.setName(message.getContent());
     }
 
-    public void mapDescriptionToEmbedEvent(Message message) {
+    public void mapDescriptionFromMessage(Message message) {
         embedEvent.setDescription(message.getContent());
     }
 
-    public void mapDateToEmbedEvent(Message message) {
+    public void mapDateFromMessage(Message message) {
         LocalDate date = LocalDate.parse(message.getContent(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         embedEvent.setDate(date);
     }
 
-    public void mapTimeToEmbedEvent(Message message) {
+    public void mapTimeFromMessage(Message message) {
         LocalTime time = LocalTime.parse(message.getContent(), DateTimeFormatter.ofPattern("HH:mm"));
         embedEvent.setTime(time);
     }
 
-    public void mapInstancesToEmbedEvent(List<String> selectedInstances) {
+    public void mapInstancesFromList(List<String> selectedInstances) {
         embedEvent.setInstances(selectedInstances);
     }
 
-    public void mapMemberSizeToEmbedEvent(List<String> selectedSize, String defaultSize) {
+    public void mapMemberSizeFromList(List<String> selectedSize, String defaultSize) {
         String size = selectedSize.stream()
                 .findFirst()
                 .orElse(defaultSize);
         embedEvent.setMemberSize(size);
     }
 
-    public void mapDestChannelIdToEmbedEvent(List<String> selectedChannelId, String defaultChannelId) {
+    public void mapDestChannelIdFromList(List<String> selectedChannelId, String defaultChannelId) {
         Long channelId = selectedChannelId.stream()
                 .mapToLong(Long::parseLong)
                 .findFirst()
@@ -56,11 +56,11 @@ public class EmbedEventMapper {
         embedEvent.setDestinationChannelId(channelId);
     }
 
-    public void mapReservingToEmbedEvent(boolean reserveEnabled) {
+    public void mapReservingFromBoolean(boolean reserveEnabled) {
         embedEvent.setReservingEnabled(reserveEnabled);
     }
 
-    public void mapEmbedIdToEmbedEvent(Message message) {
+    public void mapEmbedIdFromMessage(Message message) {
         Long id = message.getId().asLong();
         embedEvent.setEmbedId(id);
     }
