@@ -3,7 +3,7 @@ package com.github.havlli.raidsignupbot.events.createevent;
 import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventDAO;
-import com.github.havlli.raidsignupbot.embedevent.EmbedEventDataset;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEventPersistence;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventMapper;
 import com.github.havlli.raidsignupbot.signupuser.SignupUser;
 import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
@@ -28,7 +28,6 @@ public class EmbedBuilder {
     private final List<SignupUser> signupUsers;
     private final EmbedEvent embedEvent;
     private final EmbedEventMapper embedEventMapper;
-
     private final SignupUserDAO signupUserDAO;
 
     public EmbedBuilder(EmbedEvent embedEvent, SignupUserDAO signupUserDAO) {
@@ -69,7 +68,7 @@ public class EmbedBuilder {
     public void saveToDatabase() {
         EmbedEventDAO embedEventDAO = new EmbedEventDAO(new JdbcConnectionProvider());
         embedEventDAO.insertEmbedEvent(embedEvent);
-        EmbedEventDataset.getInstance().addEmbedEvent(embedEvent);
+        EmbedEventPersistence.getInstance().addEmbedEvent(embedEvent);
     }
 
     private final List<EmbedCreateFields.Field> fieldList = new ArrayList<>();
@@ -143,7 +142,6 @@ public class EmbedBuilder {
                     .flatMap(event -> {
                         User user = event.getInteraction().getUser();
                         String embedEventId = embedEvent.getEmbedId().toString();
-                        int signupOrder = signupUsers.size() + 1;
                         boolean alreadySigned = false;
                         for (SignupUser signupUser : signupUsers) {
                             if (signupUser.getId().equals(user.getId().asString())) {
@@ -153,6 +151,7 @@ public class EmbedBuilder {
                             }
                         }
                         if (!alreadySigned) {
+                            int signupOrder = signupUsers.size() + 1;
                             SignupUser signupUser = new SignupUser(signupOrder, user.getId().asString(), user.getUsername(), key);
                             signupUsers.add(signupUser);
                             signupUserDAO.insertSignupUser(signupUser, embedEventId);
