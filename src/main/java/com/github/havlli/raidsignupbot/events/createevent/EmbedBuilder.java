@@ -5,6 +5,8 @@ import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventDAO;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventDataset;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventMapper;
+import com.github.havlli.raidsignupbot.signupuser.SignupUser;
+import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
@@ -27,8 +29,11 @@ public class EmbedBuilder {
     private final EmbedEvent embedEvent;
     private final EmbedEventMapper embedEventMapper;
 
-    public EmbedBuilder(EmbedEvent embedEvent) {
+    private final SignupUserDAO signupUserDAO;
+
+    public EmbedBuilder(EmbedEvent embedEvent, SignupUserDAO signupUserDAO) {
         this.embedEvent = embedEvent;
+        this.signupUserDAO = signupUserDAO;
         this.embedEventMapper = new EmbedEventMapper(embedEvent);
         this.signupUsers = embedEvent.getSignupUsers();
     }
@@ -144,13 +149,13 @@ public class EmbedBuilder {
                             if (signupUser.getId().equals(user.getId().asString())) {
                                 alreadySigned = true;
                                 signupUser.setFieldIndex(key);
-                                SignupUserDAO.updateSignupUserFieldIndex(signupUser.getId(), key, embedEventId);
+                                signupUserDAO.updateSignupUserFieldIndex(signupUser.getId(), key, embedEventId);
                             }
                         }
                         if (!alreadySigned) {
                             SignupUser signupUser = new SignupUser(signupOrder, user.getId().asString(), user.getUsername(), key);
                             signupUsers.add(signupUser);
-                            SignupUserDAO.insertSignupUser(signupUser, embedEventId);
+                            signupUserDAO.insertSignupUser(signupUser, embedEventId);
                         }
 
                         return event.deferEdit()
