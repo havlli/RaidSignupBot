@@ -1,7 +1,7 @@
-package com.github.havlli.raidsignupbot.events.createevent;
+package com.github.havlli.raidsignupbot.signupuser;
 
+import com.github.havlli.raidsignupbot.database.ConnectionProvider;
 import com.github.havlli.raidsignupbot.database.DatabaseConnection;
-import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
 import com.github.havlli.raidsignupbot.database.Query;
 import com.github.havlli.raidsignupbot.database.structure.SignupUserColumn;
 
@@ -14,18 +14,19 @@ import java.util.List;
 
 public class SignupUserDAO {
 
-    private static final JdbcConnectionProvider jdbcProvider = new JdbcConnectionProvider();
+    private final ConnectionProvider provider;
+    public SignupUserDAO(ConnectionProvider provider) {
+        this.provider = provider;
+    }
 
-    public static void insertSignupUser(SignupUser signupUser, String embedEventId) {
-        try (Connection connection = DatabaseConnection.getConnection(jdbcProvider);
+    public void insertSignupUser(SignupUser signupUser, String embedEventId) {
+        try (Connection connection = DatabaseConnection.getConnection(provider);
              PreparedStatement preparedStatement = insertSignupUserPrep(signupUser, embedEventId, connection)) {
 
             int affectedRows = preparedStatement.executeUpdate();
             if (affectedRows != 1) System.out.println("Couldn't insert SignupUser!");
         } catch (SQLException e) {
             System.out.println("Couldn't process PreparedStatement insertSignupUserPrep: " + e.getMessage());
-        } finally {
-            DatabaseConnection.closeConnection(jdbcProvider);
         }
     }
 
@@ -39,8 +40,8 @@ public class SignupUserDAO {
         return preparedStatement;
     }
 
-    public static List<SignupUser> selectSignupUsersById(String embedEventId) {
-        try (Connection connection = DatabaseConnection.getConnection(jdbcProvider);
+    public List<SignupUser> selectSignupUsersById(String embedEventId) {
+        try (Connection connection = DatabaseConnection.getConnection(provider);
              PreparedStatement preparedStatement = selectSignupUsersByIdPrep(embedEventId, connection);
              ResultSet resultSet = preparedStatement.executeQuery()) {
 
@@ -54,8 +55,6 @@ public class SignupUserDAO {
         } catch (SQLException e) {
             System.out.println("Couldn't process PreparedStatement selectSignupUsersByIdPrep: " + e.getMessage());
             return null;
-        } finally {
-            DatabaseConnection.closeConnection(jdbcProvider);
         }
     }
 
@@ -73,16 +72,14 @@ public class SignupUserDAO {
         return preparedStatement;
     }
 
-    public static void updateSignupUserFieldIndex(String userId, int fieldIndex, String embedEventId) {
-        try (Connection connection = DatabaseConnection.getConnection(jdbcProvider);
+    public void updateSignupUserFieldIndex(String userId, int fieldIndex, String embedEventId) {
+        try (Connection connection = DatabaseConnection.getConnection(provider);
              PreparedStatement preparedStatement = updateSignupUserFieldIndex(userId, fieldIndex, embedEventId, connection)) {
 
             int affectedRows = preparedStatement.executeUpdate();
             if (affectedRows != 1) System.out.println("Couldn't update SignupUser!");
         } catch (SQLException e) {
             System.out.println("Couldn't process PreparedStatement updateSignupUserFieldIndex: " + e.getMessage());
-        } finally {
-            DatabaseConnection.closeConnection(jdbcProvider);
         }
     }
 

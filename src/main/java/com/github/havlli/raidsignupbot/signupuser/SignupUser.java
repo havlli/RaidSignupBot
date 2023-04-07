@@ -1,4 +1,4 @@
-package com.github.havlli.raidsignupbot.events.createevent;
+package com.github.havlli.raidsignupbot.signupuser;
 
 public class SignupUser {
     private int fieldIndex;
