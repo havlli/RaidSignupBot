@@ -1,7 +1,6 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
-import com.github.havlli.raidsignupbot.database.ConnectionProvider;
-import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
+import com.github.havlli.raidsignupbot.client.Dependencies;
 import com.github.havlli.raidsignupbot.signupuser.SignupUser;
 import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
 
@@ -23,8 +22,10 @@ public class EmbedEventPersistence {
 
     public static EmbedEventPersistence getInstance() {
         if(singleton == null) {
-            ConnectionProvider provider = new JdbcConnectionProvider();
-            singleton = new EmbedEventPersistence(new EmbedEventDAO(provider), new SignupUserDAO(provider));
+            singleton = new EmbedEventPersistence(
+                    Dependencies.getInstance().getEmbedEventDAO(),
+                    Dependencies.getInstance().getSignupUserDAO()
+            );
         }
         return singleton;
     }
