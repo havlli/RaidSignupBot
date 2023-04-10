@@ -1,8 +1,10 @@
 package com.github.havlli.raidsignupbot.events.onreadyevent;
 
-import com.github.havlli.raidsignupbot.embedevent.EmbedEventDataset;
+import com.github.havlli.raidsignupbot.client.Dependencies;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEventPersistence;
 import com.github.havlli.raidsignupbot.events.EventHandler;
 import com.github.havlli.raidsignupbot.events.createevent.EmbedBuilder;
+import com.github.havlli.raidsignupbot.logger.Logger;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import reactor.core.publisher.Mono;
@@ -12,6 +14,7 @@ import reactor.core.scheduler.Schedulers;
 import java.time.Duration;
 
 public class OnReadyEvent implements EventHandler {
+
     @Override
     public Class<? extends Event> getEventType() {
         return ReadyEvent.class;
@@ -19,13 +22,19 @@ public class OnReadyEvent implements EventHandler {
 
     @Override
     public Mono<?> handleEvent(Event event) {
-
-        EmbedEventDataset.getInstance().getData().forEach(embedEvent -> {
-            EmbedBuilder embedBuilder = new EmbedBuilder(embedEvent);
+        Logger logger = Dependencies.getInstance().getLogger();
+        EmbedEventPersistence.getInstance().getData().forEach(embedEvent -> {
+            EmbedBuilder embedBuilder = new EmbedBuilder(
+                    embedEvent,
+                    Dependencies.getInstance().getSignupUserDAO(),
+                    Dependencies.getInstance().getEmbedEventDAO()
+            );
             embedBuilder.subscribeInteractions(event.getClient().getEventDispatcher());
         });
 
-        System.out.println("Scheduler registered");
+        logger.log("EmbedEvent data subscribed!");
+
+        logger.log("Scheduler registered");
         Scheduler scheduler = Schedulers.newSingle("EmbedScheduler");
 
         return Mono.fromRunnable(OnReadyEvent::scheduledTimeCheck)
@@ -36,7 +45,7 @@ public class OnReadyEvent implements EventHandler {
     }
 
     private static void scheduledTimeCheck() {
-        System.out.println("Scheduled check running");
+        Dependencies.getInstance().getLogger().log("Scheduled check running");
     }
 
     private static Mono<Void> loadSignupInteractions(Event event) {

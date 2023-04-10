@@ -1,6 +1,6 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
-import com.github.havlli.raidsignupbot.events.createevent.SignupUser;
+import com.github.havlli.raidsignupbot.signupuser.SignupUser;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

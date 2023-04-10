@@ -12,14 +12,13 @@ import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
 public class Dependencies {
 
     private static Dependencies instance;
-    private final ConnectionProvider connectionProvider;
     private final SignupUserDAO signupUserDAO;
     private final EmbedEventDAO embedEventDAO;
     private final Logger logger;
 
 
     private Dependencies() {
-        this.connectionProvider = new JdbcConnectionProvider();
+        ConnectionProvider connectionProvider = new JdbcConnectionProvider();
         this.signupUserDAO = new SignupUserDAO(connectionProvider);
         this.embedEventDAO = new EmbedEventDAO(connectionProvider);
         this.logger = new ConsoleLogger(new MessagePrinter(), new TextFormatter());

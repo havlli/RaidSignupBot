@@ -1,5 +1,7 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
+import com.github.havlli.raidsignupbot.client.Dependencies;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.events.EventHandler;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -24,7 +26,12 @@ public class CreateEvent implements EventHandler {
 
     private static Mono<Message> deferredMessage(ChatInputInteractionEvent event) {
 
-        SignupBuilder signupBuilder = new SignupBuilder(event);
+        EmbedBuilder embedBuilder = new EmbedBuilder(
+                new EmbedEvent(),
+                Dependencies.getInstance().getSignupUserDAO(),
+                Dependencies.getInstance().getEmbedEventDAO()
+        );
+        SignupBuilder signupBuilder = new SignupBuilder(event, embedBuilder);
         signupBuilder.startBuildProcess();
 
         return event.createFollowup("Initiated process of creating event in your DMs, please continue there!")

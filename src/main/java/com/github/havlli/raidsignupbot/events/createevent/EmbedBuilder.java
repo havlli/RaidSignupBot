@@ -1,10 +1,9 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
-import com.github.havlli.raidsignupbot.database.JdbcConnectionProvider;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventDAO;
-import com.github.havlli.raidsignupbot.embedevent.EmbedEventPersistence;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventMapper;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEventPersistence;
 import com.github.havlli.raidsignupbot.signupuser.SignupUser;
 import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
 import discord4j.core.event.EventDispatcher;
@@ -29,10 +28,12 @@ public class EmbedBuilder {
     private final EmbedEvent embedEvent;
     private final EmbedEventMapper embedEventMapper;
     private final SignupUserDAO signupUserDAO;
+    private final EmbedEventDAO embedEventDAO;
 
-    public EmbedBuilder(EmbedEvent embedEvent, SignupUserDAO signupUserDAO) {
+    public EmbedBuilder(EmbedEvent embedEvent, SignupUserDAO signupUserDAO, EmbedEventDAO embedEventDAO) {
         this.embedEvent = embedEvent;
         this.signupUserDAO = signupUserDAO;
+        this.embedEventDAO = embedEventDAO;
         this.embedEventMapper = new EmbedEventMapper(embedEvent);
         this.signupUsers = embedEvent.getSignupUsers();
     }
@@ -66,7 +67,6 @@ public class EmbedBuilder {
     }
 
     public void saveToDatabase() {
-        EmbedEventDAO embedEventDAO = new EmbedEventDAO(new JdbcConnectionProvider());
         embedEventDAO.insertEmbedEvent(embedEvent);
         EmbedEventPersistence.getInstance().addEmbedEvent(embedEvent);
     }
