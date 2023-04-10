@@ -1,7 +1,6 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
 import com.github.havlli.raidsignupbot.component.ActionRows;
-import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
@@ -44,14 +43,14 @@ public class SignupBuilder {
     private final List<Long> messagesToClean;
 
 
-    public SignupBuilder(ChatInputInteractionEvent event) {
+    public SignupBuilder(ChatInputInteractionEvent event, EmbedBuilder embedBuilder) {
         this.event = event;
         this.client = event.getClient();
         this.eventDispatcher = event.getClient().getEventDispatcher();
         this.user = event.getInteraction().getUser();
         this.privateChannelMono = user.getPrivateChannel();
-        this.embedBuilder = new EmbedBuilder(new EmbedEvent());
-        embedBuilder.getMapper().mapUserToEmbedEvent(user);
+        this.embedBuilder = embedBuilder;
+        embedBuilder.getMapper().mapUserFromMessage(user);
         this.messagesToClean = new ArrayList<>();
         this.interactionTimeoutSeconds = 30;
     }
@@ -103,7 +102,7 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.getMapper().mapNameToEmbedEvent(message);
+                    embedBuilder.getMapper().mapNameFromMessage(message);
                     return sendDescriptionPrompt();
                 });
     }
@@ -123,7 +122,7 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.getMapper().mapDescriptionToEmbedEvent(message);
+                    embedBuilder.getMapper().mapDescriptionFromMessage(message);
                     return sendDatePrompt();
                 });
     }
@@ -144,7 +143,7 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.getMapper().mapDateToEmbedEvent(message);
+                    embedBuilder.getMapper().mapDateFromMessage(message);
                     return sendTimePrompt();
                 })
                 .onErrorResume(DateTimeParseException.class, onError -> privateChannelMono
@@ -172,7 +171,7 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.getMapper().mapTimeToEmbedEvent(message);
+                    embedBuilder.getMapper().mapTimeFromMessage(message);
                     return cleanupMessages()
                             .then(raidSelectPrompt());
                 })
@@ -196,7 +195,7 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("raid-select") && event.getInteraction().getUser().equals(user))
                 .next()
                 .flatMap(event -> {
-                    embedBuilder.getMapper().mapInstancesToEmbedEvent(event.getValues());
+                    embedBuilder.getMapper().mapInstancesFromList(event.getValues());
                     return sendRaidSizePrompt(event, message);
                 })
                 .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
@@ -228,7 +227,7 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("raid-size") && event.getInteraction().getUser().equals(user))
                 .next()
                 .flatMap(event -> {
-                    embedBuilder.getMapper().mapMemberSizeToEmbedEvent(event.getValues(), "25");
+                    embedBuilder.getMapper().mapMemberSizeFromList(event.getValues(), "25");
                     return sendGuildChannelPrompt(event, message);
                 });
     }
@@ -249,7 +248,7 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("destination-channel") && event.getInteraction().getUser().equals(user))
                 .next()
                 .flatMap(event -> {
-                    embedBuilder.getMapper().mapDestChannelIdToEmbedEvent(event.getValues(), defaultChannelId);
+                    embedBuilder.getMapper().mapDestChannelIdFromList(event.getValues(), defaultChannelId);
                     return sendSoftReservePrompt(event, message);
                 });
     }
@@ -271,7 +270,7 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("reserveYes") || event.getCustomId().equals("reserveNo"))
                 .next()
                 .flatMap(event -> {
-                    embedBuilder.getMapper().mapReservingToEmbedEvent(event.getCustomId().equals("reserveYes"));
+                    embedBuilder.getMapper().mapReservingFromBoolean(event.getCustomId().equals("reserveYes"));
                     return sendConfirmationPrompt(event, message);
                 });
     }
@@ -313,7 +312,7 @@ public class SignupBuilder {
                                 .cast(MessageChannel.class)
                                 .flatMap(channel -> channel.createMessage("Generating event..."))
                                 .flatMap(finalMessage -> {
-                                    embedBuilder.getMapper().mapEmbedIdToEmbedEvent(finalMessage);
+                                    embedBuilder.getMapper().mapEmbedIdFromMessage(finalMessage);
 
                                     return finalMessage.edit(MessageEditSpec.builder()
                                             .contentOrNull("")
