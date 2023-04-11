@@ -133,24 +133,22 @@ public class EmbedBuilder {
     }
 
     public void subscribeInteractions(EventDispatcher eventDispatcher) {
-        EmbedFields.getFieldsMap().forEach((key, value) -> {
-            String customId = embedEvent.getEmbedId() + "," + key;
+        EmbedFields.getFieldsMap().forEach((fieldKey, value) -> {
+            String customId = embedEvent.getEmbedId() + "," + fieldKey;
             eventDispatcher.on(ButtonInteractionEvent.class)
                     .filter(event -> event.getCustomId().equals(customId))
                     .flatMap(event -> {
                         User user = event.getInteraction().getUser();
+                        String userId = user.getId().asString();
                         String embedEventId = embedEvent.getEmbedId().toString();
-                        boolean alreadySigned = false;
-                        for (SignupUser signupUser : signupUsers) {
-                            if (signupUser.getId().equals(user.getId().asString())) {
-                                alreadySigned = true;
-                                signupUserService.updateSignupUser(signupUser, embedEventId, key);
-                            }
-                        }
-                        if (!alreadySigned) {
+
+                        SignupUser signupUser = signupUserService.getSignupUser(userId, signupUsers);
+                        if (signupUser == null) {
                             int signupOrder = signupUsers.size() + 1;
-                            SignupUser signupUser = new SignupUser(signupOrder, user.getId().asString(), user.getUsername(), key);
+                            signupUser = new SignupUser(signupOrder, userId, user.getUsername(), fieldKey);
                             signupUserService.addSignupUser(signupUser, signupUsers, embedEventId);
+                        } else {
+                            signupUserService.updateSignupUser(signupUser, embedEventId, fieldKey);
                         }
 
                         return event.deferEdit()
