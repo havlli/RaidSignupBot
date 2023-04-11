@@ -1,11 +1,10 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
-import com.github.havlli.raidsignupbot.embedevent.EmbedEventDAO;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventMapper;
-import com.github.havlli.raidsignupbot.embedevent.EmbedEventPersistence;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEventService;
 import com.github.havlli.raidsignupbot.signupuser.SignupUser;
-import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
+import com.github.havlli.raidsignupbot.signupuser.SignupUserService;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
@@ -27,13 +26,13 @@ public class EmbedBuilder {
     private final List<SignupUser> signupUsers;
     private final EmbedEvent embedEvent;
     private final EmbedEventMapper embedEventMapper;
-    private final SignupUserDAO signupUserDAO;
-    private final EmbedEventDAO embedEventDAO;
+    private final EmbedEventService embedEventService;
+    private final SignupUserService signupUserService;
 
-    public EmbedBuilder(EmbedEvent embedEvent, SignupUserDAO signupUserDAO, EmbedEventDAO embedEventDAO) {
+    public EmbedBuilder(EmbedEvent embedEvent, EmbedEventService embedEventService, SignupUserService signupUserService) {
         this.embedEvent = embedEvent;
-        this.signupUserDAO = signupUserDAO;
-        this.embedEventDAO = embedEventDAO;
+        this.embedEventService = embedEventService;
+        this.signupUserService = signupUserService;
         this.embedEventMapper = new EmbedEventMapper(embedEvent);
         this.signupUsers = embedEvent.getSignupUsers();
     }
@@ -67,8 +66,7 @@ public class EmbedBuilder {
     }
 
     public void saveToDatabase() {
-        embedEventDAO.insertEmbedEvent(embedEvent);
-        EmbedEventPersistence.getInstance().addEmbedEvent(embedEvent);
+        embedEventService.addEmbedEvent(embedEvent);
     }
 
     private final List<EmbedCreateFields.Field> fieldList = new ArrayList<>();
@@ -146,15 +144,13 @@ public class EmbedBuilder {
                         for (SignupUser signupUser : signupUsers) {
                             if (signupUser.getId().equals(user.getId().asString())) {
                                 alreadySigned = true;
-                                signupUser.setFieldIndex(key);
-                                signupUserDAO.updateSignupUserFieldIndex(signupUser.getId(), key, embedEventId);
+                                signupUserService.updateSignupUser(signupUser, embedEventId, key);
                             }
                         }
                         if (!alreadySigned) {
                             int signupOrder = signupUsers.size() + 1;
                             SignupUser signupUser = new SignupUser(signupOrder, user.getId().asString(), user.getUsername(), key);
-                            signupUsers.add(signupUser);
-                            signupUserDAO.insertSignupUser(signupUser, embedEventId);
+                            signupUserService.addSignupUser(signupUser, signupUsers, embedEventId);
                         }
 
                         return event.deferEdit()
@@ -164,6 +160,10 @@ public class EmbedBuilder {
                                 );
                     }).subscribe();
         });
+    }
+
+    public EmbedEvent getEmbedEvent() {
+        return embedEvent;
     }
 
     public Long getDestinationChannelId() {
