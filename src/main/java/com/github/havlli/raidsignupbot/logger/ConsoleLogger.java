@@ -18,9 +18,9 @@ public class ConsoleLogger implements Logger {
     }
 
     @Override
-    public void log(String messageString) {
+    public void log(String messageContent) {
 
-        Message message = new Message(messageString);
+        Message message = new Message(messageContent);
         messagePrinter.writeMessage(message, formatter, printWriter);
     }
 }
