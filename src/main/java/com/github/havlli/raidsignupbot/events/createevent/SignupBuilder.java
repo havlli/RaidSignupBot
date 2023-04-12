@@ -39,7 +39,7 @@ public class SignupBuilder {
     private List<TextChannel> textChannels;
     private String defaultChannelId;
     private final EmbedBuilder embedBuilder;
-    private final int interactionTimeoutSeconds;
+    private final int INTERACTION_TIMEOUT_SECONDS = 300;
     private final List<Long> messagesToClean;
 
 
@@ -52,7 +52,6 @@ public class SignupBuilder {
         this.embedBuilder = embedBuilder;
         embedBuilder.getMapper().mapUserFromMessage(user);
         this.messagesToClean = new ArrayList<>();
-        this.interactionTimeoutSeconds = 30;
     }
 
     public void startBuildProcess(){
@@ -86,7 +85,7 @@ public class SignupBuilder {
                     messagesToClean.add(previousMessage.getId().asLong());
                     return awaitNameInput();
                 })
-                .timeout(Duration.ofSeconds(60))
+                .timeout(Duration.ofSeconds(INTERACTION_TIMEOUT_SECONDS))
                 .onErrorResume(TimeoutException.class, ignore -> {
                     System.out.println("SelectMenu Timed out - sendNamePrompt()");
                     return privateChannelMono.flatMap(privateChannel -> {
@@ -198,7 +197,7 @@ public class SignupBuilder {
                     embedBuilder.getMapper().mapInstancesFromList(event.getValues());
                     return sendRaidSizePrompt(event, message);
                 })
-                .timeout(Duration.ofSeconds(interactionTimeoutSeconds))
+                .timeout(Duration.ofSeconds(INTERACTION_TIMEOUT_SECONDS))
                 .onErrorResume(TimeoutException.class, ignore -> {
                     System.out.println("SelectMenu Timed out - raid-select");
                     return message.edit(MessageEditSpec
@@ -214,7 +213,7 @@ public class SignupBuilder {
     private Mono<Message> sendRaidSizePrompt(SelectMenuInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                                .addEmbed(embedBuilder.getPreview())
+                                .addEmbed(embedBuilder.getPreviewEmbed())
                                 .addComponent(ActionRows.getRaidSizeSelect())
                                 .contentOrNull("Test")
                         .build())
@@ -235,7 +234,7 @@ public class SignupBuilder {
     private Mono<Message> sendGuildChannelPrompt(SelectMenuInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreview())
+                        .addEmbed(embedBuilder.getPreviewEmbed())
                         .addComponent(ActionRows.getTextChannelSelect(textChannels))
                         .contentOrNull("Test")
                         .build())
@@ -256,7 +255,7 @@ public class SignupBuilder {
     private Mono<Message> sendSoftReservePrompt(SelectMenuInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreview())
+                        .addEmbed(embedBuilder.getPreviewEmbed())
                         .addComponent(ActionRows.getReserveRow())
                         .contentOrNull("Test")
                         .build())
@@ -278,7 +277,7 @@ public class SignupBuilder {
     private Mono<Message> sendConfirmationPrompt(ButtonInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreview())
+                        .addEmbed(embedBuilder.getPreviewEmbed())
                         .addComponent(ActionRows.getConfirmationRow())
                         .contentOrNull("Test")
                         .build())
@@ -303,7 +302,7 @@ public class SignupBuilder {
     private Mono<Message> finalizeProcess(ButtonInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreview())
+                        .addEmbed(embedBuilder.getPreviewEmbed())
                         .build())
                 )
                 .flatMap(event1 -> this.event.getInteraction()
@@ -316,12 +315,12 @@ public class SignupBuilder {
 
                                     return finalMessage.edit(MessageEditSpec.builder()
                                             .contentOrNull("")
-                                            .addEmbed(embedBuilder.getFinalEmbed())
-                                            .addAllComponents(embedBuilder.getRoleButtons())
+                                            .addEmbed(embedBuilder.build())
+                                            .addAllComponents(embedBuilder.getLayoutComponents())
                                             .build());
                                 })
                                 .flatMap(process -> {
-                                    embedBuilder.saveToDatabase();
+                                    embedBuilder.saveEmbedEvent();
                                     embedBuilder.subscribeInteractions(eventDispatcher);
                                     return Mono.empty();
                                 })
