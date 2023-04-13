@@ -18,6 +18,11 @@ public class EmbedEventService {
         embedEventDAO.insertEmbedEvent(embedEvent);
     }
 
+    public void removeEmbedEvent(EmbedEvent embedEvent) {
+        embedEventPersistence.removeEmbedEvent(embedEvent);
+        embedEventDAO.updateExpiredEmbedEvent(embedEvent, false);
+    }
+
     public HashSet<EmbedEvent> getActiveEmbedEvents() {
         return embedEventPersistence.getData();
     }

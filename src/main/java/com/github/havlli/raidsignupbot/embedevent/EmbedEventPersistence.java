@@ -37,4 +37,8 @@ public class EmbedEventPersistence {
     public void addEmbedEvent(EmbedEvent embedEvent) {
         embedEventHashSet.add(embedEvent);
     }
+
+    public void removeEmbedEvent(EmbedEvent embedEvent) {
+        embedEventHashSet.remove(embedEvent);
+    }
 }

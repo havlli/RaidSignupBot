@@ -24,14 +24,13 @@ public class Dependencies {
 
 
     private Dependencies() {
+        this.logger = new ConsoleLogger(new MessagePrinter(), new TextFormatter());
         ConnectionProvider connectionProvider = new JdbcConnectionProvider();
         this.signupUserDAO = new SignupUserDAO(connectionProvider);
         this.signupUserService = new SignupUserService(signupUserDAO);
-        this.embedEventDAO = new EmbedEventDAO(connectionProvider);
+        this.embedEventDAO = new EmbedEventDAO(connectionProvider, logger);
         this.embedEventPersistence = new EmbedEventPersistence(embedEventDAO, signupUserDAO);
         this.embedEventService = new EmbedEventService(embedEventDAO, embedEventPersistence);
-        this.logger = new ConsoleLogger(new MessagePrinter(), new TextFormatter());
-
     }
 
     public static Dependencies getInstance() {

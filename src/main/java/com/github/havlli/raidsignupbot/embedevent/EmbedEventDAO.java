@@ -4,6 +4,7 @@ import com.github.havlli.raidsignupbot.database.ConnectionProvider;
 import com.github.havlli.raidsignupbot.database.DatabaseConnection;
 import com.github.havlli.raidsignupbot.database.Query;
 import com.github.havlli.raidsignupbot.database.structure.EmbedEventColumn;
+import com.github.havlli.raidsignupbot.logger.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,8 +17,10 @@ import java.util.HashSet;
 
 public class EmbedEventDAO {
     private final ConnectionProvider provider;
-    public EmbedEventDAO(ConnectionProvider provider) {
+    private final Logger logger;
+    public EmbedEventDAO(ConnectionProvider provider, Logger logger) {
         this.provider = provider;
+        this.logger = logger;
     }
 
     public void insertEmbedEvent(EmbedEvent embedEvent) {
@@ -26,10 +29,10 @@ public class EmbedEventDAO {
 
             int affectedRows = insertEmbedEventPrep.executeUpdate();
             if (affectedRows != 1) {
-                System.out.println("Couldn't insert new EmbedEvent");
+                logger.log("Couldn't insert new EmbedEvent");
             }
         } catch (SQLException e) {
-            System.out.println("Couldn't process PreparedStatement insertEmbedEventPrep: " + e.getMessage());
+            logger.log("Couldn't process PreparedStatement insertEmbedEventPrep: " + e.getMessage());
         }
     }
 
@@ -61,7 +64,8 @@ public class EmbedEventDAO {
 
             return embedEventHashSet;
         } catch (SQLException e) {
-            System.out.println("Couldn't process PreparedStatement selectActiveEmbedEvents: " + e.getMessage());
+            logger.log("Couldn't process PreparedStatement selectActiveEmbedEvents: " + e.getMessage());
+
             return new HashSet<>();
         }
     }
@@ -82,5 +86,24 @@ public class EmbedEventDAO {
         embedEvent.setActive(resultSet.getInt(EmbedEventColumn.ACTIVE.toString()) == 1);
 
         return embedEvent;
+    }
+
+    public void updateExpiredEmbedEvent(EmbedEvent embedEvent, boolean isActive) {
+        try(Connection connection = DatabaseConnection.getConnection(provider);
+            PreparedStatement preparedStatement = updateExpiredEmbedEventPrep(connection, embedEvent, isActive)) {
+
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows != 1) logger.log("EmbedEvent wasn't updated");
+        } catch (SQLException e) {
+            logger.log("There was error with processing updateExpiredEmbedEvent! " + e.getMessage());
+        }
+    }
+    private static PreparedStatement updateExpiredEmbedEventPrep(Connection connection, EmbedEvent embedEvent, boolean isActive) throws SQLException {
+        int active = isActive ? 1 : 0;
+        PreparedStatement preparedStatement = connection.prepareStatement(Query.UPDATE_EXPIRED_EMBED_EVENT);
+        preparedStatement.setInt(1, active);
+        preparedStatement.setString(2, embedEvent.getEmbedId().toString());
+
+        return preparedStatement;
     }
 }

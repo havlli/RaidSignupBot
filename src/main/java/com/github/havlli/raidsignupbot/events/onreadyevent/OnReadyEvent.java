@@ -1,19 +1,27 @@
 package com.github.havlli.raidsignupbot.events.onreadyevent;
 
 import com.github.havlli.raidsignupbot.client.Dependencies;
-import com.github.havlli.raidsignupbot.embedevent.EmbedEventPersistence;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEventService;
 import com.github.havlli.raidsignupbot.events.EventHandler;
 import com.github.havlli.raidsignupbot.events.createevent.EmbedBuilder;
 import com.github.havlli.raidsignupbot.logger.Logger;
+import discord4j.common.util.Snowflake;
+import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
+import discord4j.core.object.entity.Message;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
+import java.util.HashSet;
 
 public class OnReadyEvent implements EventHandler {
+
+    private final Logger logger = Dependencies.getInstance().getLogger();
+    private final int INTERVAL_SECONDS = 5;
 
     @Override
     public Class<? extends Event> getEventType() {
@@ -22,33 +30,58 @@ public class OnReadyEvent implements EventHandler {
 
     @Override
     public Mono<?> handleEvent(Event event) {
-        Logger logger = Dependencies.getInstance().getLogger();
-        EmbedEventPersistence.getInstance().getData().forEach(embedEvent -> {
-            EmbedBuilder embedBuilder = new EmbedBuilder(
-                    embedEvent,
-                    Dependencies.getInstance().getSignupUserDAO(),
-                    Dependencies.getInstance().getEmbedEventDAO()
-            );
-            embedBuilder.subscribeInteractions(event.getClient().getEventDispatcher());
-        });
 
-        logger.log("EmbedEvent data subscribed!");
+        subscribeActiveEmbedEventsFromDatabase(event);
 
         logger.log("Scheduler registered");
         Scheduler scheduler = Schedulers.newSingle("EmbedScheduler");
 
-        return Mono.fromRunnable(OnReadyEvent::scheduledTimeCheck)
-                .delaySubscription(Duration.ofSeconds(5))
+        return Mono.fromRunnable(() -> this.scheduledTimeCheck(event))
+                .delaySubscription(Duration.ofSeconds(INTERVAL_SECONDS))
                 .repeat()
                 .subscribeOn(scheduler)
                 .then();
     }
 
-    private static void scheduledTimeCheck() {
-        Dependencies.getInstance().getLogger().log("Scheduled check running");
+
+    private void scheduledTimeCheck(Event event) {
+
+        logger.log("Scheduled check running");
+
+        EmbedEventService embedEventService = Dependencies.getInstance().getEmbedEventService();
+        embedEventService.getExpiredEmbedEvents()
+                .forEach(embedEvent -> logger.log(embedEvent.getEmbedId().toString()));
+
+
+        embedEventService.getExpiredEmbedEvents()
+                .forEach(embedEvent -> {
+
+                    Snowflake messageId = Snowflake.of(embedEvent.getEmbedId());
+                    Snowflake channelId = Snowflake.of(embedEvent.getDestinationChannelId());
+                    event.getClient()
+                            .getMessageById(channelId, messageId)
+                            .flatMap(Message::delete)
+                            .subscribe();
+
+                    embedEventService.removeEmbedEvent(embedEvent);
+                });
     }
 
-    private static Mono<Void> loadSignupInteractions(Event event) {
-        return Mono.empty();
+    private void subscribeActiveEmbedEventsFromDatabase(Event event) {
+        EventDispatcher eventDispatcher = event.getClient().getEventDispatcher();
+        HashSet<EmbedEvent> activeEmbedEvents = Dependencies.getInstance()
+                .getEmbedEventService()
+                .getActiveEmbedEvents();
+
+        activeEmbedEvents.forEach(embedEvent -> {
+            EmbedBuilder embedBuilder = new EmbedBuilder(
+                    embedEvent,
+                    Dependencies.getInstance().getEmbedEventService(),
+                    Dependencies.getInstance().getSignupUserService()
+            );
+            embedBuilder.subscribeInteractions(eventDispatcher);
+        });
+
+        logger.log("EmbedEvent data subscribed!");
     }
 }
