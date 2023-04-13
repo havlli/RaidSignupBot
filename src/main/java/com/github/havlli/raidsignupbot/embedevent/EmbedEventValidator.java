@@ -7,8 +7,8 @@ import java.time.ZonedDateTime;
 public class EmbedEventValidator {
 
     public static boolean isExpired(EmbedEvent embedEvent) {
-        ZoneId utcZoneId = ZoneId.of("UTC");
 
+        ZoneId utcZoneId = ZoneId.of("UTC");
         LocalDateTime eventDateTime = LocalDateTime.of(embedEvent.getDate(), embedEvent.getTime());
         ZonedDateTime zonedDateTime = ZonedDateTime.of(eventDateTime, utcZoneId);
 

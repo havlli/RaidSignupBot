@@ -17,11 +17,11 @@ public class EventSubscriber {
         return eventHandlers;
     }
 
-    private static void addEvent(EventHandler handler) {
+    private void addEvent(EventHandler handler) {
         getEventHandlers().add(handler);
     }
 
-    public static void subscribeEvents(GatewayDiscordClient gatewayDiscordClient) {
+    public void subscribeEvents(GatewayDiscordClient gatewayDiscordClient) {
         registerEvents();
         for (EventHandler handler : eventHandlers) {
             gatewayDiscordClient.on(handler.getEventType(), handler::handleEvent)
@@ -29,7 +29,7 @@ public class EventSubscriber {
         }
     }
 
-    private static void registerEvents() {
+    private void registerEvents() {
         addEvent(new OnReadyEvent());
         addEvent(new TestEvent());
         addEvent(new CreateEvent());
