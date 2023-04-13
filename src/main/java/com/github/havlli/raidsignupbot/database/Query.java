@@ -42,4 +42,9 @@ public class Query {
                     " SET " + SignupUserColumn.FIELD_INDEX + " = ?" +
                     " WHERE " + SignupUserColumn.USER_ID + " = ?" +
                     " AND " + SignupUserColumn.EMBED_EVENT_ID + " = ?";
+
+    public static final String UPDATE_EXPIRED_EMBED_EVENT =
+            "UPDATE " + Table.EMBED_EVENT +
+                    " SET " + EmbedEventColumn.ACTIVE + " = ?" +
+                    " WHERE " + EmbedEventColumn.ID + " = ?";
 }
