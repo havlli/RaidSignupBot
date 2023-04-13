@@ -15,7 +15,7 @@ public class EmbedEventMapper {
         this.embedEvent = embedEvent;
     }
 
-    public void mapUserFromMessage(User user) {
+    public void mapAuthorFromUser(User user) {
         embedEvent.setAuthor(String.format("%s#%s", user.getUsername(), user.getDiscriminator()));
     }
 
