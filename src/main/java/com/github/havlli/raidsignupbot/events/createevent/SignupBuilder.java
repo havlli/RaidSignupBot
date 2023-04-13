@@ -50,7 +50,7 @@ public class SignupBuilder {
         this.user = event.getInteraction().getUser();
         this.privateChannelMono = user.getPrivateChannel();
         this.embedBuilder = embedBuilder;
-        embedBuilder.getMapper().mapUserFromMessage(user);
+        embedBuilder.getMapper().mapAuthorFromUser(user);
         this.messagesToClean = new ArrayList<>();
     }
 

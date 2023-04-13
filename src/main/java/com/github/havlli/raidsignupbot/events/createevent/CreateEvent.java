@@ -28,8 +28,8 @@ public class CreateEvent implements EventHandler {
 
         EmbedBuilder embedBuilder = new EmbedBuilder(
                 new EmbedEvent(),
-                Dependencies.getInstance().getSignupUserDAO(),
-                Dependencies.getInstance().getEmbedEventDAO()
+                Dependencies.getInstance().getEmbedEventService(),
+                Dependencies.getInstance().getSignupUserService()
         );
         SignupBuilder signupBuilder = new SignupBuilder(event, embedBuilder);
         signupBuilder.startBuildProcess();
