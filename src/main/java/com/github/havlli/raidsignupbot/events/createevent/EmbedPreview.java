@@ -9,27 +9,23 @@ import java.util.List;
 
 public class EmbedPreview {
 
-    private final EmbedEvent embedEvent;
-
-    public EmbedPreview(EmbedEvent embedEvent) {
-        this.embedEvent = embedEvent;
-    }
-
     private final List<EmbedCreateFields.Field> fieldList = new ArrayList<>();
 
-    public EmbedCreateSpec buildPreview() {
-        addFieldIfNotPresent("Name", embedEvent.getName(), false);
-        addFieldIfNotPresent("Description", embedEvent.getDescription(), false);
-        addFieldIfNotPresent("Time", embedEvent.getTime() != null ? embedEvent.getTime().toString() : null, true);
-        addFieldIfNotPresent("Date", embedEvent.getDate() != null ? embedEvent.getDate().toString() : null, true);
-        addFieldIfNotPresent("Raids", embedEvent.getInstances() != null ? String.join(", ", embedEvent.getInstances()) : null, false);
-        addFieldIfNotPresent("Raid Size", embedEvent.getMemberSize(), false);
-        addFieldIfNotPresent("Destination channel ID", embedEvent.getDestinationChannelId() != null ? embedEvent.getDestinationChannelId().toString() : null, false);
-        if (embedEvent.isReservingEnabled()) {
+    public EmbedCreateSpec buildPreview(EmbedEvent.EmbedEventBuilder embedEventBuilder) {
+        addFieldIfNotPresent("Name", embedEventBuilder.getName(), false);
+        addFieldIfNotPresent("Description", embedEventBuilder.getDescription(), false);
+        addFieldIfNotPresent("Time", embedEventBuilder.getTime() != null ? embedEventBuilder.getTime().toString() : null, true);
+        addFieldIfNotPresent("Date", embedEventBuilder.getDate() != null ? embedEventBuilder.getDate().toString() : null, true);
+        addFieldIfNotPresent("Raids", embedEventBuilder.getInstances(), false);
+        addFieldIfNotPresent("Raid Size", embedEventBuilder.getMemberSize(), false);
+        addFieldIfNotPresent("Destination channel ID", embedEventBuilder.getDestinationChannelId(), false);
+        if (embedEventBuilder.isReservingEnabled()) {
             EmbedCreateFields.Field reservingEnabled = EmbedCreateFields.Field.of("SoftReserve Enabled", "", false);
             addFieldIfNotPresent(reservingEnabled);
         }
-        return EmbedCreateSpec.builder().addAllFields(fieldList).build();
+        return EmbedCreateSpec.builder()
+                .addAllFields(fieldList)
+                .build();
     }
 
     private void addFieldIfNotPresent(String name, String value, boolean inline) {

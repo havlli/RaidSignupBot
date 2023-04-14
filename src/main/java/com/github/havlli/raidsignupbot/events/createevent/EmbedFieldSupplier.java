@@ -1,5 +1,6 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
+import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.signupuser.SignupUser;
 import discord4j.core.spec.EmbedCreateFields;
 
@@ -10,21 +11,16 @@ import java.util.stream.Collectors;
 
 public class EmbedFieldSupplier implements FieldSupplier {
 
-    private final List<SignupUser> signupUsers;
-
-    public EmbedFieldSupplier(List<SignupUser> signupUsers) {
-        this.signupUsers = signupUsers;
-    }
-
     @Override
-    public List<EmbedCreateFields.Field> getPopulatedFields() {
+    public List<EmbedCreateFields.Field> getPopulatedFields(EmbedEvent embedEvent) {
         List<EmbedCreateFields.Field> populatedFields = new ArrayList<>();
 
         for (Map.Entry<Integer, String> entry : EmbedFields.getFieldsMap().entrySet()) {
             int fieldIndex = entry.getKey();
             String fieldName = entry.getValue();
 
-            List<SignupUser> matchingUsers = getMatchingUsers(fieldIndex);
+            List<SignupUser> signupUsers = embedEvent.getSignupUsers();
+            List<SignupUser> matchingUsers = getMatchingUsers(fieldIndex, signupUsers);
             if (!matchingUsers.isEmpty()) {
                 boolean isOneLineField = fieldIndex < 0;
                 String fieldConcat = buildFieldConcat(fieldName, matchingUsers, isOneLineField);
@@ -40,7 +36,7 @@ public class EmbedFieldSupplier implements FieldSupplier {
         return populatedFields;
     }
 
-    private List<SignupUser> getMatchingUsers(int fieldIndex) {
+    private List<SignupUser> getMatchingUsers(int fieldIndex, List<SignupUser> signupUsers) {
         return signupUsers.stream()
                 .filter(user -> user.getFieldIndex() == fieldIndex)
                 .collect(Collectors.toList());

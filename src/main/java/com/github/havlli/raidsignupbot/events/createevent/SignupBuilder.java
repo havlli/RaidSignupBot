@@ -1,6 +1,7 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
 import com.github.havlli.raidsignupbot.component.ActionRows;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
@@ -39,6 +40,7 @@ public class SignupBuilder {
     private List<TextChannel> textChannels;
     private String defaultChannelId;
     private final EmbedBuilder embedBuilder;
+    private final EmbedEvent.EmbedEventBuilder embedEventBuilder;
     private final int INTERACTION_TIMEOUT_SECONDS = 300;
     private final List<Long> messagesToClean;
 
@@ -49,16 +51,16 @@ public class SignupBuilder {
         this.eventDispatcher = event.getClient().getEventDispatcher();
         this.user = event.getInteraction().getUser();
         this.privateChannelMono = user.getPrivateChannel();
+        this.embedEventBuilder = EmbedEvent.builder();
         this.embedBuilder = embedBuilder;
-        embedBuilder.getMapper().mapAuthorFromUser(user);
         this.messagesToClean = new ArrayList<>();
+        embedEventBuilder.addAuthor(user);
     }
 
     public void startBuildProcess(){
         fetchDefaultChannel();
         fetchTextChannels();
         sendNamePrompt().subscribe();
-
     }
 
     private void fetchTextChannels() {
@@ -101,7 +103,8 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.getMapper().mapNameFromMessage(message);
+                    embedEventBuilder.addName(message);
+                    /*embedBuilder.getMapper().mapNameFromMessage(message);*/
                     return sendDescriptionPrompt();
                 });
     }
@@ -121,7 +124,8 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.getMapper().mapDescriptionFromMessage(message);
+                    embedEventBuilder.addDescription(message);
+                    /*embedBuilder.getMapper().mapDescriptionFromMessage(message);*/
                     return sendDatePrompt();
                 });
     }
@@ -142,7 +146,8 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.getMapper().mapDateFromMessage(message);
+                    embedEventBuilder.addDate(message);
+                    /*embedBuilder.getMapper().mapDateFromMessage(message);*/
                     return sendTimePrompt();
                 })
                 .onErrorResume(DateTimeParseException.class, onError -> privateChannelMono
@@ -170,7 +175,8 @@ public class SignupBuilder {
                 .filter(message -> message.getAuthor().equals(Optional.of(user)))
                 .next()
                 .flatMap(message -> {
-                    embedBuilder.getMapper().mapTimeFromMessage(message);
+                    embedEventBuilder.addTime(message);
+                    /*embedBuilder.getMapper().mapTimeFromMessage(message);*/
                     return cleanupMessages()
                             .then(raidSelectPrompt());
                 })
@@ -194,14 +200,14 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("raid-select") && event.getInteraction().getUser().equals(user))
                 .next()
                 .flatMap(event -> {
-                    embedBuilder.getMapper().mapInstancesFromList(event.getValues());
+                    embedEventBuilder.addInstances(event.getValues());
+                    /*embedBuilder.getMapper().mapInstancesFromList(event.getValues());*/
                     return sendRaidSizePrompt(event, message);
                 })
                 .timeout(Duration.ofSeconds(INTERACTION_TIMEOUT_SECONDS))
                 .onErrorResume(TimeoutException.class, ignore -> {
                     System.out.println("SelectMenu Timed out - raid-select");
-                    return message.edit(MessageEditSpec
-                            .builder()
+                    return message.edit(MessageEditSpec.builder()
                             .contentOrNull("Timed out, please start over")
                             .components(Collections.emptyList())
                             .embeds(Collections.emptyList())
@@ -213,7 +219,7 @@ public class SignupBuilder {
     private Mono<Message> sendRaidSizePrompt(SelectMenuInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                                .addEmbed(embedBuilder.getPreviewEmbed())
+                                .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
                                 .addComponent(ActionRows.getRaidSizeSelect())
                                 .contentOrNull("Test")
                         .build())
@@ -226,7 +232,8 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("raid-size") && event.getInteraction().getUser().equals(user))
                 .next()
                 .flatMap(event -> {
-                    embedBuilder.getMapper().mapMemberSizeFromList(event.getValues(), "25");
+                    embedEventBuilder.addMemberSize(event.getValues(), "25");
+                    /*embedBuilder.getMapper().mapMemberSizeFromList(event.getValues(), "25");*/
                     return sendGuildChannelPrompt(event, message);
                 });
     }
@@ -234,7 +241,7 @@ public class SignupBuilder {
     private Mono<Message> sendGuildChannelPrompt(SelectMenuInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreviewEmbed())
+                        .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
                         .addComponent(ActionRows.getTextChannelSelect(textChannels))
                         .contentOrNull("Test")
                         .build())
@@ -247,7 +254,8 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("destination-channel") && event.getInteraction().getUser().equals(user))
                 .next()
                 .flatMap(event -> {
-                    embedBuilder.getMapper().mapDestChannelIdFromList(event.getValues(), defaultChannelId);
+                    embedEventBuilder.addDestinationChannel(event.getValues(), defaultChannelId);
+                    /*embedBuilder.getMapper().mapDestChannelIdFromList(event.getValues(), defaultChannelId);*/
                     return sendSoftReservePrompt(event, message);
                 });
     }
@@ -255,7 +263,7 @@ public class SignupBuilder {
     private Mono<Message> sendSoftReservePrompt(SelectMenuInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreviewEmbed())
+                        .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
                         .addComponent(ActionRows.getReserveRow())
                         .contentOrNull("Test")
                         .build())
@@ -269,7 +277,8 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("reserveYes") || event.getCustomId().equals("reserveNo"))
                 .next()
                 .flatMap(event -> {
-                    embedBuilder.getMapper().mapReservingFromBoolean(event.getCustomId().equals("reserveYes"));
+                    embedEventBuilder.addReservingEnabled(event.getCustomId().equals("reserveYes"));
+                    /*embedBuilder.getMapper().mapReservingFromBoolean(event.getCustomId().equals("reserveYes"));*/
                     return sendConfirmationPrompt(event, message);
                 });
     }
@@ -277,7 +286,7 @@ public class SignupBuilder {
     private Mono<Message> sendConfirmationPrompt(ButtonInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreviewEmbed())
+                        .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
                         .addComponent(ActionRows.getConfirmationRow())
                         .contentOrNull("Test")
                         .build())
@@ -300,28 +309,33 @@ public class SignupBuilder {
     }
 
     private Mono<Message> finalizeProcess(ButtonInteractionEvent event, Message message) {
+        Snowflake destinationChannelId = Snowflake.of(embedEventBuilder.getDestinationChannelId());
+
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreviewEmbed())
+                        .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
                         .build())
                 )
                 .flatMap(event1 -> this.event.getInteraction()
                         .getGuild()
-                        .flatMap(guild -> guild.getChannelById(Snowflake.of(embedBuilder.getDestinationChannelId()))
+                        .flatMap(guild -> guild.getChannelById(destinationChannelId)
                                 .cast(MessageChannel.class)
                                 .flatMap(channel -> channel.createMessage("Generating event..."))
                                 .flatMap(finalMessage -> {
-                                    embedBuilder.getMapper().mapEmbedIdFromMessage(finalMessage);
+
+                                    embedEventBuilder.addEmbedId(finalMessage.getId());
+                                    EmbedEvent embedEvent = embedEventBuilder.build();
+                                    /*embedBuilder.getMapper().mapEmbedIdFromMessage(finalMessage);*/
 
                                     return finalMessage.edit(MessageEditSpec.builder()
                                             .contentOrNull("")
-                                            .addEmbed(embedBuilder.build())
-                                            .addAllComponents(embedBuilder.getLayoutComponents())
+                                            .addEmbed(embedBuilder.generateEmbed(embedEvent))
+                                            .addAllComponents(embedBuilder.getLayoutComponents(embedEvent))
                                             .build());
                                 })
                                 .flatMap(process -> {
-                                    embedBuilder.saveEmbedEvent();
-                                    embedBuilder.subscribeInteractions(eventDispatcher);
+                                    embedBuilder.saveEmbedEvent(embedEventBuilder.getEmbedEvent());
+                                    embedBuilder.subscribeInteractions(eventDispatcher, embedEventBuilder.getEmbedEvent());
                                     return Mono.empty();
                                 })
                         )

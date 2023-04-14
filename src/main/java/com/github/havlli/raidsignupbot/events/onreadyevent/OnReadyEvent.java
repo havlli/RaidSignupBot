@@ -50,7 +50,7 @@ public class OnReadyEvent implements EventHandler {
 
         EmbedEventService embedEventService = Dependencies.getInstance().getEmbedEventService();
         embedEventService.getExpiredEmbedEvents()
-                .forEach(embedEvent -> logger.log(embedEvent.getEmbedId().toString()));
+                .forEach(embedEvent -> logger.log(embedEvent.getEmbedId()));
 
 
         embedEventService.getExpiredEmbedEvents()
@@ -75,11 +75,10 @@ public class OnReadyEvent implements EventHandler {
 
         activeEmbedEvents.forEach(embedEvent -> {
             EmbedBuilder embedBuilder = new EmbedBuilder(
-                    embedEvent,
                     Dependencies.getInstance().getEmbedEventService(),
                     Dependencies.getInstance().getSignupUserService()
             );
-            embedBuilder.subscribeInteractions(eventDispatcher);
+            embedBuilder.subscribeInteractions(eventDispatcher, embedEvent);
         });
 
         logger.log("EmbedEvent data subscribed!");

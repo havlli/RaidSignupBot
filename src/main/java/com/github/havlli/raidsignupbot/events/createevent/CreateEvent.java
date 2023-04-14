@@ -1,7 +1,6 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
 import com.github.havlli.raidsignupbot.client.Dependencies;
-import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.events.EventHandler;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -27,7 +26,6 @@ public class CreateEvent implements EventHandler {
     private static Mono<Message> deferredMessage(ChatInputInteractionEvent event) {
 
         EmbedBuilder embedBuilder = new EmbedBuilder(
-                new EmbedEvent(),
                 Dependencies.getInstance().getEmbedEventService(),
                 Dependencies.getInstance().getSignupUserService()
         );

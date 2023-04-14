@@ -26,7 +26,7 @@ public class ButtonLayoutGenerator {
                 .stream()
                 .filter(entry -> entry.getKey() > 0)
                 .map(entry -> {
-                    String customId = "%d,%d".formatted(embedEvent.getEmbedId(), entry.getKey());
+                    String customId = "%s,%d".formatted(embedEvent.getEmbedId(), entry.getKey());
                     return Button.primary(customId, entry.getValue());
                 })
                 .collect(Collectors.toList());
@@ -38,7 +38,7 @@ public class ButtonLayoutGenerator {
                 .stream()
                 .filter(entry -> entry.getKey() <= 0)
                 .map(entry -> {
-                    String customId = "%d,%d".formatted(embedEvent.getEmbedId(), entry.getKey());
+                    String customId = "%s,%d".formatted(embedEvent.getEmbedId(), entry.getKey());
                     return Button.secondary(customId, entry.getValue());
                 })
                 .collect(Collectors.toList());
