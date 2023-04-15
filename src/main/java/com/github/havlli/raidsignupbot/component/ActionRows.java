@@ -56,4 +56,13 @@ public class ActionRows {
         Button cancel = Button.danger("cancel", "Cancel");
         return ActionRow.of(confirm, cancel);
     }
+
+    public static ActionRow getExpiredRow() {
+        SelectMenu.Option option = SelectMenu.Option.of("expired-text", "This event is closed.");
+        SelectMenu selectMenu = SelectMenu.of("expired", option)
+                .withPlaceholder("This event is closed.")
+                .disabled();
+
+        return ActionRow.of(selectMenu);
+    }
 }
