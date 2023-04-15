@@ -9,7 +9,7 @@ import discord4j.core.event.domain.Event;
 
 import java.util.HashSet;
 
-public class StartupTasks {
+public class StartupTasks implements Tasks {
 
     private final Logger logger;
     private final Event event;
@@ -19,6 +19,7 @@ public class StartupTasks {
         this.logger = logger;
     }
 
+    @Override
     public void run() {
         subscribeActiveEmbedEventsFromDatabase();
     }

@@ -13,7 +13,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 
-public class ScheduledTasks {
+public class ScheduledTasks implements Tasks {
 
     private final Logger logger;
     private final Event event;
@@ -27,7 +27,8 @@ public class ScheduledTasks {
 
     }
 
-    private void run() {
+    @Override
+    public void run() {
         printExpiredEmbedEvents();
         handleExpiredEmbedEvents();
     }
