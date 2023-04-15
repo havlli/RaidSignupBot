@@ -1,4 +1,4 @@
-package com.github.havlli.raidsignupbot.events.createevent;
+package com.github.havlli.raidsignupbot.embedgenerator;
 
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;

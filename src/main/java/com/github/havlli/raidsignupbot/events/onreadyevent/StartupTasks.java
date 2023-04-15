@@ -2,7 +2,7 @@ package com.github.havlli.raidsignupbot.events.onreadyevent;
 
 import com.github.havlli.raidsignupbot.client.Dependencies;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
-import com.github.havlli.raidsignupbot.events.createevent.EmbedBuilder;
+import com.github.havlli.raidsignupbot.embedgenerator.EmbedGenerator;
 import com.github.havlli.raidsignupbot.logger.Logger;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.Event;
@@ -31,11 +31,11 @@ public class StartupTasks implements Tasks {
                 .getActiveEmbedEvents();
 
         activeEmbedEvents.forEach(embedEvent -> {
-            EmbedBuilder embedBuilder = new EmbedBuilder(
+            EmbedGenerator embedGenerator = new EmbedGenerator(
                     Dependencies.getInstance().getEmbedEventService(),
                     Dependencies.getInstance().getSignupUserService()
             );
-            embedBuilder.subscribeInteractions(eventDispatcher, embedEvent);
+            embedGenerator.subscribeInteractions(eventDispatcher, embedEvent);
         });
 
         logger.log("Active EmbedEvent interactions subscribed!");

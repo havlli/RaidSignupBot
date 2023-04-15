@@ -2,6 +2,7 @@ package com.github.havlli.raidsignupbot.events.createevent;
 
 import com.github.havlli.raidsignupbot.component.ActionRows;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
+import com.github.havlli.raidsignupbot.embedgenerator.EmbedGenerator;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
@@ -39,20 +40,20 @@ public class SignupBuilder {
     private final EventDispatcher eventDispatcher;
     private List<TextChannel> textChannels;
     private String defaultChannelId;
-    private final EmbedBuilder embedBuilder;
+    private final EmbedGenerator embedGenerator;
     private final EmbedEvent.EmbedEventBuilder embedEventBuilder;
     private final int INTERACTION_TIMEOUT_SECONDS = 300;
     private final List<Long> messagesToClean;
 
 
-    public SignupBuilder(ChatInputInteractionEvent event, EmbedBuilder embedBuilder) {
+    public SignupBuilder(ChatInputInteractionEvent event, EmbedGenerator embedGenerator) {
         this.event = event;
         this.client = event.getClient();
         this.eventDispatcher = event.getClient().getEventDispatcher();
         this.user = event.getInteraction().getUser();
         this.privateChannelMono = user.getPrivateChannel();
         this.embedEventBuilder = EmbedEvent.builder();
-        this.embedBuilder = embedBuilder;
+        this.embedGenerator = embedGenerator;
         this.messagesToClean = new ArrayList<>();
         embedEventBuilder.addAuthor(user);
     }
@@ -219,7 +220,7 @@ public class SignupBuilder {
     private Mono<Message> sendRaidSizePrompt(SelectMenuInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                                .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
+                                .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
                                 .addComponent(ActionRows.getRaidSizeSelect())
                                 .contentOrNull("Test")
                         .build())
@@ -241,7 +242,7 @@ public class SignupBuilder {
     private Mono<Message> sendGuildChannelPrompt(SelectMenuInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
+                        .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
                         .addComponent(ActionRows.getTextChannelSelect(textChannels))
                         .contentOrNull("Test")
                         .build())
@@ -263,7 +264,7 @@ public class SignupBuilder {
     private Mono<Message> sendSoftReservePrompt(SelectMenuInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
+                        .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
                         .addComponent(ActionRows.getReserveRow())
                         .contentOrNull("Test")
                         .build())
@@ -286,7 +287,7 @@ public class SignupBuilder {
     private Mono<Message> sendConfirmationPrompt(ButtonInteractionEvent event, Message message) {
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
+                        .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
                         .addComponent(ActionRows.getConfirmationRow())
                         .contentOrNull("Test")
                         .build())
@@ -313,7 +314,7 @@ public class SignupBuilder {
 
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.getPreviewEmbed(embedEventBuilder))
+                        .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
                         .build())
                 )
                 .flatMap(event1 -> this.event.getInteraction()
@@ -329,13 +330,13 @@ public class SignupBuilder {
 
                                     return finalMessage.edit(MessageEditSpec.builder()
                                             .contentOrNull("")
-                                            .addEmbed(embedBuilder.generateEmbed(embedEvent))
-                                            .addAllComponents(embedBuilder.getLayoutComponents(embedEvent))
+                                            .addEmbed(embedGenerator.generateEmbed(embedEvent))
+                                            .addAllComponents(embedGenerator.getLayoutComponents(embedEvent))
                                             .build());
                                 })
                                 .flatMap(process -> {
-                                    embedBuilder.saveEmbedEvent(embedEventBuilder.getEmbedEvent());
-                                    embedBuilder.subscribeInteractions(eventDispatcher, embedEventBuilder.getEmbedEvent());
+                                    embedGenerator.saveEmbedEvent(embedEventBuilder.getEmbedEvent());
+                                    embedGenerator.subscribeInteractions(eventDispatcher, embedEventBuilder.getEmbedEvent());
                                     return Mono.empty();
                                 })
                         )

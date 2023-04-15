@@ -1,4 +1,4 @@
-package com.github.havlli.raidsignupbot.events.createevent;
+package com.github.havlli.raidsignupbot.embedgenerator;
 
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import discord4j.core.object.component.ActionRow;
@@ -13,32 +13,32 @@ public class ButtonLayoutGenerator {
 
     private ButtonLayoutGenerator() { }
 
-    public static List<LayoutComponent> generateButtons(EmbedEvent embedEvent) {
+    public static List<LayoutComponent> generateButtons(EmbedEvent embedEvent, String delimiter) {
         return Arrays.asList(
-                ActionRow.of(generateRoleButtons(embedEvent)),
-                ActionRow.of(generateDefaultButtons(embedEvent))
+                ActionRow.of(generateRoleButtons(embedEvent, delimiter)),
+                ActionRow.of(generateDefaultButtons(embedEvent, delimiter))
         );
     }
 
-    private static List<Button> generateRoleButtons(EmbedEvent embedEvent) {
+    private static List<Button> generateRoleButtons(EmbedEvent embedEvent, String delimiter) {
         return EmbedFields.getFieldsMap()
                 .entrySet()
                 .stream()
                 .filter(entry -> entry.getKey() > 0)
                 .map(entry -> {
-                    String customId = "%s,%d".formatted(embedEvent.getEmbedId(), entry.getKey());
+                    String customId = embedEvent.getEmbedId() + delimiter + entry.getKey();
                     return Button.primary(customId, entry.getValue());
                 })
                 .collect(Collectors.toList());
     }
 
-    private static List<Button> generateDefaultButtons(EmbedEvent embedEvent) {
+    private static List<Button> generateDefaultButtons(EmbedEvent embedEvent, String delimiter) {
         return EmbedFields.getFieldsMap()
                 .entrySet()
                 .stream()
                 .filter(entry -> entry.getKey() <= 0)
                 .map(entry -> {
-                    String customId = "%s,%d".formatted(embedEvent.getEmbedId(), entry.getKey());
+                    String customId = embedEvent.getEmbedId() + delimiter + entry.getKey();
                     return Button.secondary(customId, entry.getValue());
                 })
                 .collect(Collectors.toList());

@@ -1,4 +1,4 @@
-package com.github.havlli.raidsignupbot.events.createevent;
+package com.github.havlli.raidsignupbot.embedgenerator;
 
 import java.util.HashMap;
 import java.util.Map;

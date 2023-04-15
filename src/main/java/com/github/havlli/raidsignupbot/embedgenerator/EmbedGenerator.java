@@ -1,4 +1,4 @@
-package com.github.havlli.raidsignupbot.events.createevent;
+package com.github.havlli.raidsignupbot.embedgenerator;
 
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventService;
@@ -12,13 +12,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
-public class EmbedBuilder {
+public class EmbedGenerator {
     private final EmbedEventService embedEventService;
     private final SignupInteractionSubscriber signupInteractionSubscriber;
     private final EmbedFieldSupplier embedFieldSupplier;
     private final EmbedPreview embedPreview;
+    private final String DELIMITER = ",";
 
-    public EmbedBuilder(
+    public EmbedGenerator(
             EmbedEventService embedEventService,
             SignupUserService signupUserService
     ) {
@@ -33,23 +34,20 @@ public class EmbedBuilder {
         return dateTime.toInstant(ZoneOffset.UTC).getEpochSecond();
     }
 
-    private String getRaidSizeString(EmbedEvent embedEvent) {
-        return embedEvent.getSignupUsers().size() + "/" + embedEvent.getMemberSize();
-    }
-
     public EmbedCreateSpec generateEmbed(EmbedEvent embedEvent) {
         String empty = "";
-        String leaderAndIdOfEvent = "Leader: %s - ID: %s"
-                .formatted(embedEvent.getAuthor(), embedEvent.getEmbedId());
-        Long timestamp = getTimestamp(embedEvent);
+        String leaderWithEmbedId = EmbedFormatter.leaderWithEmbedId(embedEvent);
+        String raidSize = EmbedFormatter.raidSize(embedEvent);
+        String date = EmbedFormatter.date(getTimestamp(embedEvent));
+        String time = EmbedFormatter.time(getTimestamp(embedEvent));
 
         return EmbedCreateSpec.builder()
-                .addField(empty, leaderAndIdOfEvent, false)
+                .addField(empty, leaderWithEmbedId, false)
                 .addField(embedEvent.getName(), empty, false)
                 .addField(empty, embedEvent.getDescription(), false)
-                .addField(empty, "<t:%d:D>".formatted(timestamp), true)
-                .addField(empty, "<t:%d:t>".formatted(timestamp), true)
-                .addField(empty, getRaidSizeString(embedEvent), true)
+                .addField(empty, date, true)
+                .addField(empty, time, true)
+                .addField(empty, raidSize, true)
                 .addAllFields(embedFieldSupplier.getPopulatedFields(embedEvent))
                 .build();
     }
@@ -63,12 +61,12 @@ public class EmbedBuilder {
     }
 
     public List<LayoutComponent> getLayoutComponents(EmbedEvent embedEvent) {
-        return ButtonLayoutGenerator.generateButtons(embedEvent);
+        return ButtonLayoutGenerator.generateButtons(embedEvent, DELIMITER);
     }
 
     public void subscribeInteractions(EventDispatcher eventDispatcher, EmbedEvent embedEvent) {
         EmbedFields.getFieldsMap().forEach((fieldKey, value) -> {
-            String customId = embedEvent.getEmbedId() + "," + fieldKey;
+            String customId = embedEvent.getEmbedId() + DELIMITER + fieldKey;
             eventDispatcher.on(ButtonInteractionEvent.class)
                     .filter(event -> event.getCustomId().equals(customId))
                     .flatMap(interaction -> signupInteractionSubscriber.handleEvent(interaction, embedEvent))

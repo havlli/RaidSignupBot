@@ -1,4 +1,4 @@
-package com.github.havlli.raidsignupbot.events.createevent;
+package com.github.havlli.raidsignupbot.embedgenerator;
 
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.signupuser.SignupUser;
@@ -13,14 +13,14 @@ import java.util.List;
 
 public class SignupInteractionSubscriber implements InteractionSubscriber {
 
-    private final EmbedBuilder embedBuilder;
+    private final EmbedGenerator embedGenerator;
     private final SignupUserService signupUserService;
 
     public SignupInteractionSubscriber(
-            EmbedBuilder embedBuilder,
+            EmbedGenerator embedGenerator,
             SignupUserService signupUserService
     ) {
-        this.embedBuilder = embedBuilder;
+        this.embedGenerator = embedGenerator;
         this.signupUserService = signupUserService;
     }
 
@@ -43,7 +43,7 @@ public class SignupInteractionSubscriber implements InteractionSubscriber {
 
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
-                        .addEmbed(embedBuilder.generateEmbed(embedEvent))
+                        .addEmbed(embedGenerator.generateEmbed(embedEvent))
                         .build())
                 );
     }
