@@ -24,7 +24,7 @@ public class EmbedEventPersistence {
 
     private void forEachEmbedEventPopulateSignupUserList() {
         embedEventHashSet.forEach(embedEvent -> {
-            String embedEventId = embedEvent.getEmbedId().toString();
+            String embedEventId = embedEvent.getEmbedId();
             List<SignupUser> signupUserList = signupUserDAO.selectSignupUsersById(embedEventId);
             embedEvent.setSignupUsers(signupUserList);
         });

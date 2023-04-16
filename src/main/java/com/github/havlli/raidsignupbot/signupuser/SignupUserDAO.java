@@ -4,6 +4,7 @@ import com.github.havlli.raidsignupbot.database.ConnectionProvider;
 import com.github.havlli.raidsignupbot.database.DatabaseConnection;
 import com.github.havlli.raidsignupbot.database.Query;
 import com.github.havlli.raidsignupbot.database.structure.SignupUserColumn;
+import com.github.havlli.raidsignupbot.logger.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,8 +16,11 @@ import java.util.List;
 public class SignupUserDAO {
 
     private final ConnectionProvider provider;
-    public SignupUserDAO(ConnectionProvider provider) {
+    private final Logger logger;
+
+    public SignupUserDAO(ConnectionProvider provider, Logger logger) {
         this.provider = provider;
+        this.logger = logger;
     }
 
     public void insertSignupUser(SignupUser signupUser, String embedEventId) {
@@ -24,9 +28,9 @@ public class SignupUserDAO {
              PreparedStatement preparedStatement = insertSignupUserPrep(signupUser, embedEventId, connection)) {
 
             int affectedRows = preparedStatement.executeUpdate();
-            if (affectedRows != 1) System.out.println("Couldn't insert SignupUser!");
+            if (affectedRows != 1) logger.log("Couldn't insert SignupUser!");
         } catch (SQLException e) {
-            System.out.println("Couldn't process PreparedStatement insertSignupUserPrep: " + e.getMessage());
+            logger.log("Couldn't process PreparedStatement insertSignupUserPrep: " + e.getMessage());
         }
     }
 
@@ -53,7 +57,7 @@ public class SignupUserDAO {
 
             return signupUserHashSet;
         } catch (SQLException e) {
-            System.out.println("Couldn't process PreparedStatement selectSignupUsersByIdPrep: " + e.getMessage());
+            logger.log("Couldn't process PreparedStatement selectSignupUsersByIdPrep: " + e.getMessage());
             return null;
         }
     }
@@ -77,9 +81,9 @@ public class SignupUserDAO {
              PreparedStatement preparedStatement = updateSignupUserFieldIndex(userId, fieldIndex, embedEventId, connection)) {
 
             int affectedRows = preparedStatement.executeUpdate();
-            if (affectedRows != 1) System.out.println("Couldn't update SignupUser!");
+            if (affectedRows != 1) logger.log("Couldn't update SignupUser!");
         } catch (SQLException e) {
-            System.out.println("Couldn't process PreparedStatement updateSignupUserFieldIndex: " + e.getMessage());
+            logger.log("Couldn't process PreparedStatement updateSignupUserFieldIndex: " + e.getMessage());
         }
     }
 

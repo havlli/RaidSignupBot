@@ -26,7 +26,7 @@ public class Dependencies {
     private Dependencies() {
         this.logger = new ConsoleLogger(new MessagePrinter(), new TextFormatter());
         ConnectionProvider connectionProvider = new JdbcConnectionProvider();
-        this.signupUserDAO = new SignupUserDAO(connectionProvider);
+        this.signupUserDAO = new SignupUserDAO(connectionProvider, logger);
         this.signupUserService = new SignupUserService(signupUserDAO);
         this.embedEventDAO = new EmbedEventDAO(connectionProvider, logger);
         this.embedEventPersistence = new EmbedEventPersistence(embedEventDAO, signupUserDAO);
