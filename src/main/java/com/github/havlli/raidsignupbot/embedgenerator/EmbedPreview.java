@@ -11,7 +11,7 @@ public class EmbedPreview {
 
     private final List<EmbedCreateFields.Field> fieldList = new ArrayList<>();
 
-    public EmbedCreateSpec buildPreview(EmbedEvent.EmbedEventBuilder embedEventBuilder) {
+    public EmbedCreateSpec buildPreview(EmbedEvent.Builder embedEventBuilder) {
         addFieldIfNotPresent("Name", embedEventBuilder.getName(), false);
         addFieldIfNotPresent("Description", embedEventBuilder.getDescription(), false);
         addFieldIfNotPresent("Time", embedEventBuilder.getTime() != null ? embedEventBuilder.getTime().toString() : null, true);

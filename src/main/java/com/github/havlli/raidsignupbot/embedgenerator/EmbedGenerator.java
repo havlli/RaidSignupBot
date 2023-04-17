@@ -56,7 +56,7 @@ public class EmbedGenerator {
         embedEventService.addEmbedEvent(embedEvent);
     }
 
-    public EmbedCreateSpec getPreviewEmbed(EmbedEvent.EmbedEventBuilder embedEventBuilder) {
+    public EmbedCreateSpec getPreviewEmbed(EmbedEvent.Builder embedEventBuilder) {
         return embedPreview.buildPreview(embedEventBuilder);
     }
 

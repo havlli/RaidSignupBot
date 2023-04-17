@@ -25,54 +25,19 @@ public class EmbedEvent {
     private boolean active;
     private List<SignupUser> signupUsers;
 
-    public EmbedEvent() {
+    private EmbedEvent(Builder builder) {
+        this.name = builder.name;
+        this.description = builder.description;
+        this.date = builder.date;
+        this.time = builder.time;
+        this.instances = builder.instances;
+        this.memberSize = builder.memberSize;
+        this.reservingEnabled = builder.reservingEnabled;
+        this.destinationChannelId = builder.destinationChannelId;
+        this.embedId = builder.embedId;
+        this.author = builder.author;
         active = true;
-        reservingEnabled = false;
         signupUsers = new ArrayList<>();
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
-    private void setAuthor(String author) {
-        this.author = author;
-    }
-
-    private void setName(String name) {
-        this.name = name;
-    }
-
-    private void setDescription(String description) {
-        this.description = description;
-    }
-
-    private void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    private void setTime(LocalTime time) {
-        this.time = time;
-    }
-
-    private void setInstances(String instances) {
-        this.instances = instances;
-    }
-
-    private void setMemberSize(String memberSize) {
-        this.memberSize = memberSize;
-    }
-
-    private void setReservingEnabled(boolean reservingEnabled) {
-        this.reservingEnabled = reservingEnabled;
-    }
-
-    private void setDestinationChannelId(String destinationChannelId) {
-        this.destinationChannelId = destinationChannelId;
-    }
-
-    private void setEmbedId(String embedId) {
-        this.embedId = embedId;
     }
 
     public String getName() {
@@ -127,11 +92,11 @@ public class EmbedEvent {
         signupUsers = signupUserList;
     }
 
-    public static EmbedEventBuilder builder() {
-        return new EmbedEventBuilder();
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public static class EmbedEventBuilder {
+    public static class Builder {
         private String name;
         private String description;
         private LocalDate date;
@@ -144,127 +109,117 @@ public class EmbedEvent {
         private String author;
         private EmbedEvent embedEvent;
 
-        public EmbedEventBuilder addName(String name) {
+        public Builder addName(String name) {
             this.name = name;
             return this;
         }
 
-        public EmbedEventBuilder addName(Message message) {
+        public Builder addName(Message message) {
             this.name = message.getContent();
             return this;
         }
 
-        public EmbedEventBuilder addDescription(String description) {
+        public Builder addDescription(String description) {
             this.description = description;
             return this;
         }
 
-        public EmbedEventBuilder addDescription(Message message) {
+        public Builder addDescription(Message message) {
             this.description = message.getContent();
             return this;
         }
 
-        public EmbedEventBuilder addDate(String date) {
+        public Builder addDate(String date) {
             this.date = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             return this;
         }
 
-        public EmbedEventBuilder addDate(Message message) {
+        public Builder addDate(Message message) {
             this.date = LocalDate.parse(message.getContent(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             return this;
         }
 
-        public EmbedEventBuilder addTime(String time) {
+        public Builder addTime(String time) {
             this.time = LocalTime.parse(time, DateTimeFormatter.ofPattern("HH:mm"));
             return this;
         }
 
-        public EmbedEventBuilder addTime(Message message) {
+        public Builder addTime(Message message) {
             this.time = LocalTime.parse(message.getContent(), DateTimeFormatter.ofPattern("HH:mm"));
             return this;
         }
 
-        public EmbedEventBuilder addInstances(String instances) {
+        public Builder addInstances(String instances) {
             this.instances = instances;
             return this;
         }
 
-        public EmbedEventBuilder addInstances(List<String> instances) {
+        public Builder addInstances(List<String> instances) {
             this.instances = String.join(", ", instances);
             return this;
         }
 
-        public EmbedEventBuilder addMemberSize(String memberSize) {
+        public Builder addMemberSize(String memberSize) {
             this.memberSize = memberSize;
             return this;
         }
 
-        public EmbedEventBuilder addMemberSize(List<String> memberSize, String defaultSize) {
+        public Builder addMemberSize(List<String> memberSize, String defaultSize) {
             this.memberSize = memberSize.stream()
                     .findFirst()
                     .orElse(defaultSize);
             return this;
         }
 
-        public EmbedEventBuilder addReservingEnabled(boolean reservingEnabled) {
+        public Builder addReservingEnabled(boolean reservingEnabled) {
             this.reservingEnabled = reservingEnabled;
             return this;
         }
 
-        public EmbedEventBuilder addReservingEnabled(int reservingEnabled) {
+        public Builder addReservingEnabled(int reservingEnabled) {
             this.reservingEnabled = reservingEnabled == 1;
             return this;
         }
 
-        public EmbedEventBuilder addDestinationChannel(List<String> destinationChannel, String defaultChannel) {
+        public Builder addDestinationChannel(List<String> destinationChannel, String defaultChannel) {
             this.destinationChannelId = destinationChannel.stream()
                     .findFirst()
                     .orElse(defaultChannel);
             return this;
         }
 
-        public EmbedEventBuilder addDestinationChannel(String destinationChannel) {
+        public Builder addDestinationChannel(String destinationChannel) {
             this.destinationChannelId = destinationChannel;
             return this;
         }
 
-        public EmbedEventBuilder addEmbedId(Snowflake embedId) {
+        public Builder addEmbedId(Snowflake embedId) {
             this.embedId = embedId.asString();
             return this;
         }
 
-        public EmbedEventBuilder addEmbedId(String embedId) {
+        public Builder addEmbedId(String embedId) {
             this.embedId = embedId;
             return this;
         }
 
-        public EmbedEventBuilder addAuthor(String author) {
+        public Builder addAuthor(String author) {
             this.author = author;
             return this;
         }
 
-        public EmbedEventBuilder addAuthor(User user) {
+        public Builder addAuthor(User user) {
             this.author = String.format("%s#%s", user.getUsername(), user.getDiscriminator());
             return this;
         }
 
-        public String getDestinationChannelId() {
-            return this.destinationChannelId;
+        public EmbedEvent build() {
+            this.embedEvent = new EmbedEvent(this);
+            return embedEvent;
         }
 
-        public EmbedEvent build() {
-            this.embedEvent = new EmbedEvent();
-            embedEvent.setName(name);
-            embedEvent.setDescription(description);
-            embedEvent.setDate(date);
-            embedEvent.setTime(time);
-            embedEvent.setInstances(instances);
-            embedEvent.setMemberSize(memberSize);
-            embedEvent.setReservingEnabled(reservingEnabled);
-            embedEvent.setDestinationChannelId(destinationChannelId);
-            embedEvent.setEmbedId(embedId);
-            embedEvent.setAuthor(author);
-            return this.embedEvent;
+        public String getDestinationChannelId() {
+            return this.destinationChannelId;
         }
 
         public EmbedEvent getEmbedEvent() {

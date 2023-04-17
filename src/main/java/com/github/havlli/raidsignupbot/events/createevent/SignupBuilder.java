@@ -41,7 +41,7 @@ public class SignupBuilder {
     private List<TextChannel> textChannels;
     private String defaultChannelId;
     private final EmbedGenerator embedGenerator;
-    private final EmbedEvent.EmbedEventBuilder embedEventBuilder;
+    private final EmbedEvent.Builder embedEventBuilder;
     private final int INTERACTION_TIMEOUT_SECONDS = 300;
     private final List<Long> messagesToClean;
 
@@ -105,7 +105,6 @@ public class SignupBuilder {
                 .next()
                 .flatMap(message -> {
                     embedEventBuilder.addName(message);
-                    /*embedBuilder.getMapper().mapNameFromMessage(message);*/
                     return sendDescriptionPrompt();
                 });
     }
@@ -126,7 +125,6 @@ public class SignupBuilder {
                 .next()
                 .flatMap(message -> {
                     embedEventBuilder.addDescription(message);
-                    /*embedBuilder.getMapper().mapDescriptionFromMessage(message);*/
                     return sendDatePrompt();
                 });
     }
@@ -148,7 +146,6 @@ public class SignupBuilder {
                 .next()
                 .flatMap(message -> {
                     embedEventBuilder.addDate(message);
-                    /*embedBuilder.getMapper().mapDateFromMessage(message);*/
                     return sendTimePrompt();
                 })
                 .onErrorResume(DateTimeParseException.class, onError -> privateChannelMono
@@ -177,7 +174,6 @@ public class SignupBuilder {
                 .next()
                 .flatMap(message -> {
                     embedEventBuilder.addTime(message);
-                    /*embedBuilder.getMapper().mapTimeFromMessage(message);*/
                     return cleanupMessages()
                             .then(raidSelectPrompt());
                 })
@@ -202,7 +198,6 @@ public class SignupBuilder {
                 .next()
                 .flatMap(event -> {
                     embedEventBuilder.addInstances(event.getValues());
-                    /*embedBuilder.getMapper().mapInstancesFromList(event.getValues());*/
                     return sendRaidSizePrompt(event, message);
                 })
                 .timeout(Duration.ofSeconds(INTERACTION_TIMEOUT_SECONDS))
@@ -234,7 +229,6 @@ public class SignupBuilder {
                 .next()
                 .flatMap(event -> {
                     embedEventBuilder.addMemberSize(event.getValues(), "25");
-                    /*embedBuilder.getMapper().mapMemberSizeFromList(event.getValues(), "25");*/
                     return sendGuildChannelPrompt(event, message);
                 });
     }
@@ -256,7 +250,6 @@ public class SignupBuilder {
                 .next()
                 .flatMap(event -> {
                     embedEventBuilder.addDestinationChannel(event.getValues(), defaultChannelId);
-                    /*embedBuilder.getMapper().mapDestChannelIdFromList(event.getValues(), defaultChannelId);*/
                     return sendSoftReservePrompt(event, message);
                 });
     }
@@ -279,7 +272,6 @@ public class SignupBuilder {
                 .next()
                 .flatMap(event -> {
                     embedEventBuilder.addReservingEnabled(event.getCustomId().equals("reserveYes"));
-                    /*embedBuilder.getMapper().mapReservingFromBoolean(event.getCustomId().equals("reserveYes"));*/
                     return sendConfirmationPrompt(event, message);
                 });
     }
@@ -326,7 +318,6 @@ public class SignupBuilder {
 
                                     embedEventBuilder.addEmbedId(finalMessage.getId());
                                     EmbedEvent embedEvent = embedEventBuilder.build();
-                                    /*embedBuilder.getMapper().mapEmbedIdFromMessage(finalMessage);*/
 
                                     return finalMessage.edit(MessageEditSpec.builder()
                                             .contentOrNull("")
