@@ -5,6 +5,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 
+import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -253,5 +254,28 @@ public class EmbedEvent {
         public boolean isReservingEnabled() {
             return reservingEnabled;
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("EmbedEvent\n");
+
+        for (Field field : getClass().getDeclaredFields()) {
+            try {
+                field.setAccessible(true);
+                Object value = field.get(this);
+                if (value != null) {
+                    sb.append(field.getName())
+                            .append(": ")
+                            .append(value)
+                            .append("\n");
+                }
+            } catch (IllegalAccessException e) {
+
+            }
+        }
+
+        return sb.toString();
     }
 }
