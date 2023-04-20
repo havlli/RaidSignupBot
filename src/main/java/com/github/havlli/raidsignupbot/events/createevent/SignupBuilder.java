@@ -293,12 +293,21 @@ public class SignupBuilder {
                 .filter(event -> event.getCustomId().equals("cancel") || event.getCustomId().equals("confirm"))
                 .next()
                 .flatMap(event -> {
-                    if (event.getCustomId().equals("cancel")) {
+                    if (event.getCustomId().equals("confirm")) {
                         return finalizeProcess(event, message);
                     } else {
-                        return finalizeProcess(event, message);
+                        return cancelProcess(event, message);
                     }
                 });
+    }
+
+    private Mono<Message> cancelProcess(ButtonInteractionEvent event, Message message) {
+        return event.deferEdit()
+                .then(event.editReply(InteractionReplyEditSpec.builder()
+                        .contentOrNull("Process was canceled!")
+                                .embeds(List.of())
+                                .components(List.of())
+                        .build()));
     }
 
     private Mono<Message> finalizeProcess(ButtonInteractionEvent event, Message message) {
