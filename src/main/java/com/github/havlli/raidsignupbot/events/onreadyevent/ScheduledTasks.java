@@ -1,7 +1,8 @@
 package com.github.havlli.raidsignupbot.events.onreadyevent;
 
 import com.github.havlli.raidsignupbot.client.Dependencies;
-import com.github.havlli.raidsignupbot.component.ActionRows;
+import com.github.havlli.raidsignupbot.component.ActionRowComponent;
+import com.github.havlli.raidsignupbot.component.ExpiredSelectMenu;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEventService;
 import com.github.havlli.raidsignupbot.logger.Logger;
 import discord4j.common.util.Snowflake;
@@ -56,6 +57,7 @@ public class ScheduledTasks implements Tasks {
     }
 
     private void handleExpiredEmbedEvents() {
+        ActionRowComponent expiredSelectMenu = new ExpiredSelectMenu();
 
         embedEventService.getExpiredEmbedEvents()
                 .forEach(embedEvent -> {
@@ -65,7 +67,7 @@ public class ScheduledTasks implements Tasks {
                     event.getClient()
                             .getMessageById(channelId, messageId)
                             .flatMap(message -> message.edit(MessageEditSpec.builder()
-                                    .addComponent(ActionRows.getExpiredRow())
+                                    .addComponent(expiredSelectMenu.getActionRow())
                                     .build()))
                             .subscribe();
 

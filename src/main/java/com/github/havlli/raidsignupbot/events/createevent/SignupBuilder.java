@@ -1,6 +1,6 @@
 package com.github.havlli.raidsignupbot.events.createevent;
 
-import com.github.havlli.raidsignupbot.component.ActionRows;
+import com.github.havlli.raidsignupbot.component.*;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.embedgenerator.EmbedGenerator;
 import discord4j.common.util.Snowflake;
@@ -61,7 +61,7 @@ public class SignupBuilder {
     public void startBuildProcess(){
         fetchDefaultChannel();
         fetchTextChannels();
-        sendNamePrompt().subscribe();
+        namePrompt().subscribe();
     }
 
     private void fetchTextChannels() {
@@ -79,53 +79,38 @@ public class SignupBuilder {
                 .block();
     }
 
-    private Mono<Message> sendNamePrompt() {
+    private Mono<Message> namePrompt() {
         String messagePrompt = "**Step 1**\nEnter name of the event!";
 
         return privateChannelMono
                 .flatMap(privateChannel -> privateChannel.createMessage(messagePrompt))
                 .flatMap(previousMessage -> {
                     messagesToClean.add(previousMessage.getId().asLong());
-                    return awaitNameInput();
-                })
-                .timeout(Duration.ofSeconds(INTERACTION_TIMEOUT_SECONDS))
-                .onErrorResume(TimeoutException.class, ignore -> {
-                    System.out.println("SelectMenu Timed out - sendNamePrompt()");
-                    return privateChannelMono.flatMap(privateChannel -> {
-                        cleanupMessages();
-                        return privateChannel.createMessage("Interaction timed out, please start over!");
-                    });
+                    return eventDispatcher.on(MessageCreateEvent.class)
+                            .map(MessageCreateEvent::getMessage)
+                            .filter(message -> message.getAuthor().equals(Optional.of(user)))
+                            .next()
+                            .flatMap(message -> {
+                                embedEventBuilder.addName(message);
+                                return descriptionPrompt();
+                            });
                 });
     }
 
-    private Mono<Message> awaitNameInput() {
-        return eventDispatcher.on(MessageCreateEvent.class)
-                .map(MessageCreateEvent::getMessage)
-                .filter(message -> message.getAuthor().equals(Optional.of(user)))
-                .next()
-                .flatMap(message -> {
-                    embedEventBuilder.addName(message);
-                    return sendDescriptionPrompt();
-                });
-    }
-    private Mono<Message> sendDescriptionPrompt() {
+    private Mono<Message> descriptionPrompt() {
         String messagePrompt = "**Step 2**\nEnter description of the event!";
         return privateChannelMono
                 .flatMap(messageChannel -> messageChannel.createMessage(messagePrompt))
                 .flatMap(previousMessage -> {
                     messagesToClean.add(previousMessage.getId().asLong());
-                    return awaitDescriptionInput();
-                });
-    }
-
-    private Mono<Message> awaitDescriptionInput() {
-        return eventDispatcher.on(MessageCreateEvent.class)
-                .map(MessageCreateEvent::getMessage)
-                .filter(message -> message.getAuthor().equals(Optional.of(user)))
-                .next()
-                .flatMap(message -> {
-                    embedEventBuilder.addDescription(message);
-                    return sendDatePrompt();
+                    return eventDispatcher.on(MessageCreateEvent.class)
+                            .map(MessageCreateEvent::getMessage)
+                            .filter(message -> message.getAuthor().equals(Optional.of(user)))
+                            .next()
+                            .flatMap(message -> {
+                                embedEventBuilder.addDescription(message);
+                                return sendDatePrompt();
+                            });
                 });
     }
 
@@ -185,10 +170,11 @@ public class SignupBuilder {
 
     private Mono<Message> raidSelectPrompt() {
         String messagePrompt = "**Step 5**\nChoose which raids is this signup for:\nRequired 1 selection, maximum 3";
+        ActionRowComponent raidSelectMenu = new RaidSelectMenu();
 
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(messagePrompt)
-                        .withComponents(ActionRows.getRaidSelectMenu()))
+                        .withComponents(raidSelectMenu.getActionRow()))
                 .flatMap(this::awaitRaidSelectInteraction);
     }
 
@@ -213,10 +199,12 @@ public class SignupBuilder {
     }
 
     private Mono<Message> sendRaidSizePrompt(SelectMenuInteractionEvent event, Message message) {
+        ActionRowComponent memberSizeSelectMenu = new MemberSizeSelectMenu();
+
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                                 .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
-                                .addComponent(ActionRows.getRaidSizeSelect())
+                                .addComponent(memberSizeSelectMenu.getActionRow())
                                 .contentOrNull("Test")
                         .build())
                 )
@@ -234,10 +222,12 @@ public class SignupBuilder {
     }
 
     private Mono<Message> sendGuildChannelPrompt(SelectMenuInteractionEvent event, Message message) {
+        ActionRowComponent chanelSelectMenu = new ChanelSelectMenu(textChannels);
+
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
-                        .addComponent(ActionRows.getTextChannelSelect(textChannels))
+                        .addComponent(chanelSelectMenu.getActionRow())
                         .contentOrNull("Test")
                         .build())
                 )
@@ -255,10 +245,12 @@ public class SignupBuilder {
     }
 
     private Mono<Message> sendSoftReservePrompt(SelectMenuInteractionEvent event, Message message) {
+        ActionRowComponent reserveButtonRow = new ReserveButtonRow();
+
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
-                        .addComponent(ActionRows.getReserveRow())
+                        .addComponent(reserveButtonRow.getActionRow())
                         .contentOrNull("Test")
                         .build())
                 )
@@ -277,10 +269,12 @@ public class SignupBuilder {
     }
 
     private Mono<Message> sendConfirmationPrompt(ButtonInteractionEvent event, Message message) {
+        ActionRowComponent confirmationButtonRow = new ConfirmationButtonRow();
+
         return event.deferEdit()
                 .then(event.editReply(InteractionReplyEditSpec.builder()
                         .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
-                        .addComponent(ActionRows.getConfirmationRow())
+                        .addComponent(confirmationButtonRow.getActionRow())
                         .contentOrNull("Test")
                         .build())
                 )
