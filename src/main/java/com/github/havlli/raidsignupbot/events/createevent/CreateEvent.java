@@ -19,7 +19,9 @@ public class CreateEvent implements EventHandler {
         ChatInputInteractionEvent interactionEvent = (ChatInputInteractionEvent) event;
         if (interactionEvent.getCommandName().equals("create-event")) {
 
-            return interactionEvent.deferReply().withEphemeral(true).then(deferredMessage(interactionEvent));
+            return interactionEvent.deferReply()
+                    .withEphemeral(true)
+                    .then(deferredMessage(interactionEvent));
         }
         return Mono.empty();
     }
