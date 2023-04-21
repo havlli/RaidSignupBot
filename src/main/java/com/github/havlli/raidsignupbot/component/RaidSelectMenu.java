@@ -6,12 +6,13 @@ import discord4j.core.object.component.SelectMenu;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RaidSelectMenu implements ActionRowComponent{
+public class RaidSelectMenu implements SelectMenuComponent {
 
+    private static final String CUSTOM_ID = "raid_select";
     @Override
     public ActionRow getActionRow() {
         SelectMenuGenerator selectMenuGenerator = new SelectMenuGenerator(
-                "raid-select",
+                CUSTOM_ID,
                 buildOptions(),
                 "Choose Raids for this event!",
                 3,
@@ -20,6 +21,11 @@ public class RaidSelectMenu implements ActionRowComponent{
         );
 
         return selectMenuGenerator.generate();
+    }
+
+    @Override
+    public String getCustomId() {
+        return CUSTOM_ID;
     }
 
     private List<SelectMenu.Option> buildOptions() {
@@ -32,4 +38,6 @@ public class RaidSelectMenu implements ActionRowComponent{
 
         return selectOptions;
     }
+
+
 }

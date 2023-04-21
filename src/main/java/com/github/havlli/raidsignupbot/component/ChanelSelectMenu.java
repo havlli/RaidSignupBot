@@ -7,8 +7,9 @@ import discord4j.core.object.entity.channel.TextChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ChanelSelectMenu implements ActionRowComponent {
+public class ChanelSelectMenu implements SelectMenuComponent {
 
+    private static final String CUSTOM_ID = "destination-channel";
     private final List<TextChannel> textChannels;
 
     public ChanelSelectMenu(List<TextChannel> textChannels) {
@@ -18,7 +19,7 @@ public class ChanelSelectMenu implements ActionRowComponent {
     @Override
     public ActionRow getActionRow() {
         SelectMenuGenerator selectMenuGenerator = new SelectMenuGenerator(
-                "destination-channel",
+                CUSTOM_ID,
                 buildOptions(),
                 "Choose channel to post signup in!",
                 1,
@@ -27,6 +28,11 @@ public class ChanelSelectMenu implements ActionRowComponent {
         );
 
         return selectMenuGenerator.generate();
+    }
+
+    @Override
+    public String getCustomId() {
+        return CUSTOM_ID;
     }
 
     private List<SelectMenu.Option> buildOptions() {

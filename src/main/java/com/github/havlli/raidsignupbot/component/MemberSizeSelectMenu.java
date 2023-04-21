@@ -6,12 +6,13 @@ import discord4j.core.object.component.SelectMenu;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MemberSizeSelectMenu implements ActionRowComponent{
+public class MemberSizeSelectMenu implements SelectMenuComponent {
 
+    private static final String CUSTOM_ID = "raid-size";
     @Override
     public ActionRow getActionRow() {
         SelectMenuGenerator selectMenuGenerator = new SelectMenuGenerator(
-                "raid-size",
+                CUSTOM_ID,
                 buildOptions(),
                 "Choose maximum raid size!",
                 1,
@@ -20,6 +21,11 @@ public class MemberSizeSelectMenu implements ActionRowComponent{
         );
 
         return selectMenuGenerator.generate();
+    }
+
+    @Override
+    public String getCustomId() {
+        return CUSTOM_ID;
     }
 
     private List<SelectMenu.Option> buildOptions() {

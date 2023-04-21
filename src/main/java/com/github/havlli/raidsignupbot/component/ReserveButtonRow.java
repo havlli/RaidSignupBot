@@ -5,8 +5,9 @@ import discord4j.core.object.component.Button;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class ReserveButtonRow implements ActionRowComponent {
+public class ReserveButtonRow implements ButtonRowComponent {
 
     @Override
     public ActionRow getActionRow() {
@@ -22,5 +23,12 @@ public class ReserveButtonRow implements ActionRowComponent {
         buttons.add(buttonNo);
 
         return buttons;
+    }
+
+    @Override
+    public List<String> getCustomIds() {
+        return buildButtons().stream()
+                .map(button -> button.getCustomId().orElse("no-id"))
+                .collect(Collectors.toList());
     }
 }
