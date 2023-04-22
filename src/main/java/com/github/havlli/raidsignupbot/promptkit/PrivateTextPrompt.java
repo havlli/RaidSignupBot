@@ -15,24 +15,17 @@ public class PrivateTextPrompt implements PromptStep {
 
     private final ChatInputInteractionEvent event;
     private final String promptMessage;
-    private final MessageGarbageCollector messageGarbageCollector;
-    private Consumer<Message> inputHandler;
+    private final MessageGarbageCollector garbageCollector;
+    private final Consumer<Message> inputHandler;
+    private final String errorMessage;
 
-    public PrivateTextPrompt(
-            ChatInputInteractionEvent event,
-            String promptMessage,
-            MessageGarbageCollector messageGarbageCollector
-    ) {
-        this.event = event;
-        this.promptMessage = promptMessage;
-        this.messageGarbageCollector = messageGarbageCollector;
-        this.inputHandler = null;
+    public PrivateTextPrompt(Builder builder) {
+        this.event = builder.event;
+        this.promptMessage = builder.promptMessage;
+        this.garbageCollector = builder.garbageCollector;
+        this.inputHandler = builder.inputHandler;
+        this.errorMessage = builder.errorMessage;
 
-    }
-
-    public PrivateTextPrompt withInputHandler(Consumer<Message> inputHandler) {
-        this.inputHandler = inputHandler;
-        return this;
     }
 
     @Override
@@ -44,7 +37,7 @@ public class PrivateTextPrompt implements PromptStep {
         return privateChannelMono
                 .flatMap(privateChannel -> privateChannel.createMessage(promptMessage))
                 .flatMap(previousMessage -> {
-                    messageGarbageCollector.collectMessage(previousMessage);
+                    if (garbageCollector != null) garbageCollector.collectMessage(previousMessage);
                     return eventDispatcher.on(MessageCreateEvent.class)
                             .map(MessageCreateEvent::getMessage)
                             .filter(message -> message.getAuthor().equals(Optional.of(user)))
@@ -52,7 +45,62 @@ public class PrivateTextPrompt implements PromptStep {
                             .flatMap(message -> {
                                 if (inputHandler != null) inputHandler.accept(message);
                                 return Mono.just(message);
+                            })
+                            .onErrorResume(error -> {
+                                if (errorMessage != null) {
+                                    return privateChannelMono
+                                            .flatMap(channel -> channel.createMessage(errorMessage))
+                                            .then(this.getMono());
+                                } else {
+                                    return Mono.empty();
+                                }
                             });
                 });
+    }
+
+    public static PrivateTextPrompt.Builder builder(ChatInputInteractionEvent event) {
+        return new Builder(event);
+    }
+
+    static class Builder {
+        private PrivateTextPrompt privateTextPrompt;
+        private final ChatInputInteractionEvent event;
+        private String promptMessage;
+        private MessageGarbageCollector garbageCollector;
+        private Consumer<Message> inputHandler;
+        private String errorMessage;
+
+        Builder(ChatInputInteractionEvent event) {
+            this.event = event;
+        }
+
+        public Builder addPromptMessage(String promptMessage) {
+            this.promptMessage = promptMessage;
+            return this;
+        }
+
+        public Builder addGarbageCollector(MessageGarbageCollector garbageCollector) {
+            this.garbageCollector = garbageCollector;
+            return this;
+        }
+
+        public Builder addInputHandler(Consumer<Message> inputHandler) {
+            this.inputHandler = inputHandler;
+            return this;
+        }
+
+        public Builder addOnErrorMessage(String errorMessage) {
+            this.errorMessage = errorMessage;
+            return this;
+        }
+
+        public PrivateTextPrompt build() {
+            this.privateTextPrompt = new PrivateTextPrompt(this);
+            return privateTextPrompt;
+        }
+
+        public PrivateTextPrompt getPrompt() {
+            return privateTextPrompt;
+        }
     }
 }
