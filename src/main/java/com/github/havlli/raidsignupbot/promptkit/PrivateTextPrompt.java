@@ -63,7 +63,6 @@ public class PrivateTextPrompt implements PromptStep {
     }
 
     static class Builder {
-        private PrivateTextPrompt privateTextPrompt;
         private final ChatInputInteractionEvent event;
         private String promptMessage;
         private MessageGarbageCollector garbageCollector;
@@ -74,33 +73,28 @@ public class PrivateTextPrompt implements PromptStep {
             this.event = event;
         }
 
-        public Builder addPromptMessage(String promptMessage) {
+        public Builder withPromptMessage(String promptMessage) {
             this.promptMessage = promptMessage;
             return this;
         }
 
-        public Builder addGarbageCollector(MessageGarbageCollector garbageCollector) {
+        public Builder withGarbageCollector(MessageGarbageCollector garbageCollector) {
             this.garbageCollector = garbageCollector;
             return this;
         }
 
-        public Builder addInputHandler(Consumer<Message> inputHandler) {
+        public Builder withInputHandler(Consumer<Message> inputHandler) {
             this.inputHandler = inputHandler;
             return this;
         }
 
-        public Builder addOnErrorMessage(String errorMessage) {
+        public Builder withOnErrorMessage(String errorMessage) {
             this.errorMessage = errorMessage;
             return this;
         }
 
         public PrivateTextPrompt build() {
-            this.privateTextPrompt = new PrivateTextPrompt(this);
-            return privateTextPrompt;
-        }
-
-        public PrivateTextPrompt getPrompt() {
-            return privateTextPrompt;
+            return new PrivateTextPrompt(this);
         }
     }
 }

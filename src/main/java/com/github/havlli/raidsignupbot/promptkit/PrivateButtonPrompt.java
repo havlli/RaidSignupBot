@@ -16,23 +16,19 @@ import java.util.function.Consumer;
 public class PrivateButtonPrompt implements PromptStep {
 
     private final ChatInputInteractionEvent event;
+    private final String name;
     private final String promptMessage;
-    private Consumer<ButtonInteractionEvent> buttonHandler;
-    private ButtonRowComponent buttonRowComponent;
+    private final Consumer<ButtonInteractionEvent> buttonHandler;
+    private final ButtonRowComponent buttonRowComponent;
+    private final MessageGarbageCollector garbageCollector;
 
-    public PrivateButtonPrompt(ChatInputInteractionEvent event, String promptMessage) {
-        this.event = event;
-        this.promptMessage = promptMessage;
-    }
-
-    public PrivateButtonPrompt withButtonHandler(Consumer<ButtonInteractionEvent> buttonHandler) {
-        this.buttonHandler = buttonHandler;
-        return this;
-    }
-
-    public PrivateButtonPrompt withButtonRowComponent(ButtonRowComponent buttonRowComponent) {
-        this.buttonRowComponent = buttonRowComponent;
-        return this;
+    public PrivateButtonPrompt(Builder builder) {
+        this.event = builder.event;
+        this.name = builder.name;
+        this.promptMessage = builder.promptMessage;
+        this.buttonHandler = builder.buttonHandler;
+        this.buttonRowComponent = builder.buttonRowComponent;
+        this.garbageCollector = builder.garbageCollector;
     }
 
     @Override
@@ -44,25 +40,81 @@ public class PrivateButtonPrompt implements PromptStep {
         return privateChannelMono
                 .flatMap(channel -> channel.createMessage(promptMessage)
                         .withComponents(buttonRowComponent.getActionRow()))
-                .flatMap(message -> eventDispatcher.on(ButtonInteractionEvent.class)
-                        .filter(event -> event.getInteraction().getUser().equals(user))
-                        .filter(this::checkIfButtonIdMatches)
-                        .next()
-                        .flatMap(event -> {
-                            buttonHandler.accept(event);
-                            return event.deferEdit()
-                                    .then(event.editReply(InteractionReplyEditSpec.builder()
-                                            /*.addEmbed(previewHandler)*/
-                                            /*.addComponent(memberSizeSelectMenu.getActionRow())*/
-                                            .components(List.of())
-                                            .contentOrNull("You have selected " + event.getCustomId())
-                                            .build()));
-                        }));
+                .flatMap(message -> {
+                    if (garbageCollector != null) garbageCollector.collectMessage(message);
+                    return eventDispatcher.on(ButtonInteractionEvent.class)
+                            .filter(event -> event.getInteraction().getUser().equals(user))
+                            .filter(this::checkIfButtonIdMatches)
+                            .next()
+                            .flatMap(event -> {
+                                buttonHandler.accept(event);
+                                return event.deferEdit()
+                                        .then(event.editReply(InteractionReplyEditSpec.builder()
+                                                .components(List.of())
+                                                .contentOrNull(formatContent(event.getCustomId()))
+                                                .build()));
+                            });
+                });
     }
 
     private boolean checkIfButtonIdMatches(ButtonInteractionEvent event) {
         return buttonRowComponent.getCustomIds()
                 .stream()
                 .anyMatch(customId -> customId.equals(event.getCustomId()));
+    }
+
+    private String formatContent(String value) {
+
+        if (name == null) {
+            return "You have selected " + value;
+        } else {
+            return name + ": " + value;
+        }
+    }
+
+    public static Builder builder(ChatInputInteractionEvent event) {
+        return new Builder(event);
+    }
+
+    static class Builder {
+        private final ChatInputInteractionEvent event;
+        private String name;
+        private String promptMessage;
+        private Consumer<ButtonInteractionEvent> buttonHandler;
+        private ButtonRowComponent buttonRowComponent;
+        private MessageGarbageCollector garbageCollector;
+
+        public Builder(ChatInputInteractionEvent event) {
+            this.event = event;
+        }
+
+        public Builder withName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder withPromptMessage(String promptMessage) {
+            this.promptMessage = promptMessage;
+            return this;
+        }
+
+        public Builder withButtonHandler(Consumer<ButtonInteractionEvent> buttonHandler) {
+            this.buttonHandler = buttonHandler;
+            return this;
+        }
+
+        public Builder withButtonRowComponent(ButtonRowComponent buttonRowComponent) {
+            this.buttonRowComponent = buttonRowComponent;
+            return this;
+        }
+
+        public Builder withGarbageCollector(MessageGarbageCollector garbageCollector) {
+            this.garbageCollector = garbageCollector;
+            return this;
+        }
+
+        public PrivateButtonPrompt build() {
+            return new PrivateButtonPrompt(this);
+        }
     }
 }
