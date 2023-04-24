@@ -41,10 +41,10 @@ public class PrivateButtonPrompt implements PromptStep {
                 .flatMap(channel -> channel.createMessage(promptMessage)
                         .withComponents(buttonRowComponent.getActionRow()))
                 .flatMap(message -> {
-                    if (garbageCollector != null) garbageCollector.collectMessage(message);
+                    collectGarbage(message);
                     return eventDispatcher.on(ButtonInteractionEvent.class)
                             .filter(event -> event.getInteraction().getUser().equals(user))
-                            .filter(this::checkIfButtonIdMatches)
+                            .filter(this::checkMatches)
                             .next()
                             .flatMap(event -> {
                                 buttonHandler.accept(event);
@@ -57,7 +57,7 @@ public class PrivateButtonPrompt implements PromptStep {
                 });
     }
 
-    private boolean checkIfButtonIdMatches(ButtonInteractionEvent event) {
+    private boolean checkMatches(ButtonInteractionEvent event) {
         return buttonRowComponent.getCustomIds()
                 .stream()
                 .anyMatch(customId -> customId.equals(event.getCustomId()));
@@ -70,6 +70,10 @@ public class PrivateButtonPrompt implements PromptStep {
         } else {
             return name + ": " + value;
         }
+    }
+
+    private void collectGarbage(Message message) {
+        if (garbageCollector != null) garbageCollector.collectMessage(message);
     }
 
     public static Builder builder(ChatInputInteractionEvent event) {

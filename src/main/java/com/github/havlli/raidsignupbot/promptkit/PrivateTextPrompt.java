@@ -37,7 +37,7 @@ public class PrivateTextPrompt implements PromptStep {
         return privateChannelMono
                 .flatMap(privateChannel -> privateChannel.createMessage(promptMessage))
                 .flatMap(previousMessage -> {
-                    if (garbageCollector != null) garbageCollector.collectMessage(previousMessage);
+                    collectGarbage(previousMessage);
                     return eventDispatcher.on(MessageCreateEvent.class)
                             .map(MessageCreateEvent::getMessage)
                             .filter(message -> message.getAuthor().equals(Optional.of(user)))
@@ -49,13 +49,21 @@ public class PrivateTextPrompt implements PromptStep {
                             .onErrorResume(error -> {
                                 if (errorMessage != null) {
                                     return privateChannelMono
-                                            .flatMap(channel -> channel.createMessage(errorMessage))
+                                            .flatMap(channel -> channel.createMessage(errorMessage)
+                                                    .flatMap(message -> {
+                                                        collectGarbage(message);
+                                                        return Mono.just(message);
+                                                    }))
                                             .then(this.getMono());
                                 } else {
                                     return Mono.empty();
                                 }
                             });
                 });
+    }
+
+    private void collectGarbage(Message message) {
+        if (garbageCollector != null) garbageCollector.collectMessage(message);
     }
 
     public static PrivateTextPrompt.Builder builder(ChatInputInteractionEvent event) {

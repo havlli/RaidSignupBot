@@ -41,7 +41,7 @@ public class PrivateSelectPrompt implements PromptStep {
                 .flatMap(channel -> channel.createMessage(promptMessage)
                         .withComponents(selectMenuComponent.getActionRow()))
                 .flatMap(message -> {
-                    if (garbageCollector != null) garbageCollector.collectMessage(message);
+                    collectGarbage(message);
                     return eventDispatcher.on(SelectMenuInteractionEvent.class)
                             .filter(event -> event.getInteraction().getUser().equals(user))
                             .filter(event -> event.getCustomId().equals(selectMenuComponent.getCustomId()))
@@ -64,6 +64,10 @@ public class PrivateSelectPrompt implements PromptStep {
         } else {
             return name + ": " + concatValues;
         }
+    }
+
+    private void collectGarbage(Message message) {
+        if (garbageCollector != null) garbageCollector.collectMessage(message);
     }
 
     public static Builder builder(ChatInputInteractionEvent event) {
