@@ -7,26 +7,22 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.PrivateChannel;
-import discord4j.core.spec.InteractionReplyEditSpec;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class PrivateSelectPrompt implements PromptStep {
 
     private final ChatInputInteractionEvent event;
-    private final String name;
     private final String promptMessage;
-    private final Consumer<List<String>> inputHandler;
+    private final Function<SelectMenuInteractionEvent, Mono<Message>> interactionHandler;
     private final SelectMenuComponent selectMenuComponent;
     private final MessageGarbageCollector garbageCollector;
 
     public PrivateSelectPrompt(Builder builder) {
         this.event = builder.event;
-        this.name = builder.name;
         this.promptMessage = builder.promptMessage;
-        this.inputHandler = builder.inputHandler;
+        this.interactionHandler = builder.interactionHandler;
         this.selectMenuComponent = builder.selectMenuComponent;
         this.garbageCollector = builder.garbageCollector;
     }
@@ -47,23 +43,10 @@ public class PrivateSelectPrompt implements PromptStep {
                             .filter(event -> event.getCustomId().equals(selectMenuComponent.getCustomId()))
                             .next()
                             .flatMap(event -> {
-                                inputHandler.accept(event.getValues());
-                                return event.deferEdit()
-                                        .then(event.editReply(InteractionReplyEditSpec.builder()
-                                                .components(List.of())
-                                                .contentOrNull(formatContent(event.getValues()))
-                                                .build()));
+                                if (interactionHandler != null) return interactionHandler.apply(event);
+                                return Mono.empty();
                             });
                 });
-    }
-
-    private String formatContent(List<String> values) {
-        String concatValues = String.join(", ", values);
-        if (name == null) {
-            return "You have selected " + concatValues;
-        } else {
-            return name + ": " + concatValues;
-        }
     }
 
     private void collectGarbage(Message message) {
@@ -74,11 +57,10 @@ public class PrivateSelectPrompt implements PromptStep {
         return new Builder(event);
     }
 
-    static class Builder {
+    public static class Builder {
         private final ChatInputInteractionEvent event;
-        private String name;
         private String promptMessage;
-        private Consumer<List<String>> inputHandler;
+        private Function<SelectMenuInteractionEvent, Mono<Message>> interactionHandler;
         private SelectMenuComponent selectMenuComponent;
         private MessageGarbageCollector garbageCollector;
 
@@ -86,18 +68,13 @@ public class PrivateSelectPrompt implements PromptStep {
             this.event = event;
         }
 
-        public Builder withName(String name) {
-            this.name = name;
-            return this;
-        }
-
         public Builder withPromptMessage(String promptMessage) {
             this.promptMessage = promptMessage;
             return this;
         }
 
-        public Builder withInputHandler(Consumer<List<String>> inputHandler) {
-            this.inputHandler = inputHandler;
+        public Builder withInteractionHandler(Function<SelectMenuInteractionEvent, Mono<Message>> interactionHandler) {
+            this.interactionHandler = interactionHandler;
             return this;
         }
 

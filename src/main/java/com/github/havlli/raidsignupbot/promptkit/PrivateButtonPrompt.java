@@ -7,26 +7,23 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.PrivateChannel;
-import discord4j.core.spec.InteractionReplyEditSpec;
+import discord4j.core.spec.MessageCreateSpec;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class PrivateButtonPrompt implements PromptStep {
 
     private final ChatInputInteractionEvent event;
-    private final String name;
-    private final String promptMessage;
-    private final Consumer<ButtonInteractionEvent> buttonHandler;
+    private final MessageCreateSpec promptMessage;
+    private final Function<ButtonInteractionEvent, Mono<Message>> interactionHandler;
     private final ButtonRowComponent buttonRowComponent;
     private final MessageGarbageCollector garbageCollector;
 
     public PrivateButtonPrompt(Builder builder) {
         this.event = builder.event;
-        this.name = builder.name;
         this.promptMessage = builder.promptMessage;
-        this.buttonHandler = builder.buttonHandler;
+        this.interactionHandler = builder.interactionHandler;
         this.buttonRowComponent = builder.buttonRowComponent;
         this.garbageCollector = builder.garbageCollector;
     }
@@ -38,8 +35,8 @@ public class PrivateButtonPrompt implements PromptStep {
         Mono<PrivateChannel> privateChannelMono = user.getPrivateChannel();
 
         return privateChannelMono
-                .flatMap(channel -> channel.createMessage(promptMessage)
-                        .withComponents(buttonRowComponent.getActionRow()))
+                .flatMap(channel -> channel.createMessage(promptMessage
+                        .withComponents(buttonRowComponent.getActionRow())))
                 .flatMap(message -> {
                     collectGarbage(message);
                     return eventDispatcher.on(ButtonInteractionEvent.class)
@@ -47,12 +44,8 @@ public class PrivateButtonPrompt implements PromptStep {
                             .filter(this::checkMatches)
                             .next()
                             .flatMap(event -> {
-                                buttonHandler.accept(event);
-                                return event.deferEdit()
-                                        .then(event.editReply(InteractionReplyEditSpec.builder()
-                                                .components(List.of())
-                                                .contentOrNull(formatContent(event.getCustomId()))
-                                                .build()));
+                                if (interactionHandler != null) return interactionHandler.apply(event);
+                                return Mono.empty();
                             });
                 });
     }
@@ -63,15 +56,6 @@ public class PrivateButtonPrompt implements PromptStep {
                 .anyMatch(customId -> customId.equals(event.getCustomId()));
     }
 
-    private String formatContent(String value) {
-
-        if (name == null) {
-            return "You have selected " + value;
-        } else {
-            return name + ": " + value;
-        }
-    }
-
     private void collectGarbage(Message message) {
         if (garbageCollector != null) garbageCollector.collectMessage(message);
     }
@@ -80,11 +64,10 @@ public class PrivateButtonPrompt implements PromptStep {
         return new Builder(event);
     }
 
-    static class Builder {
+    public static class Builder {
         private final ChatInputInteractionEvent event;
-        private String name;
-        private String promptMessage;
-        private Consumer<ButtonInteractionEvent> buttonHandler;
+        private MessageCreateSpec promptMessage;
+        private Function<ButtonInteractionEvent, Mono<Message>> interactionHandler;
         private ButtonRowComponent buttonRowComponent;
         private MessageGarbageCollector garbageCollector;
 
@@ -92,18 +75,20 @@ public class PrivateButtonPrompt implements PromptStep {
             this.event = event;
         }
 
-        public Builder withName(String name) {
-            this.name = name;
+        public Builder withPromptMessage(String promptMessage) {
+            this.promptMessage = MessageCreateSpec.builder()
+                    .content(promptMessage)
+                    .build();
             return this;
         }
 
-        public Builder withPromptMessage(String promptMessage) {
+        public Builder withPromptMessage(MessageCreateSpec promptMessage) {
             this.promptMessage = promptMessage;
             return this;
         }
 
-        public Builder withButtonHandler(Consumer<ButtonInteractionEvent> buttonHandler) {
-            this.buttonHandler = buttonHandler;
+        public Builder withInteractionHandler(Function<ButtonInteractionEvent, Mono<Message>> interactionHandler) {
+            this.interactionHandler = interactionHandler;
             return this;
         }
 
