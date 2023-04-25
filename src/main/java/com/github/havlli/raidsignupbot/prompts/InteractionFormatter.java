@@ -1,4 +1,4 @@
-package com.github.havlli.raidsignupbot.promptkit;
+package com.github.havlli.raidsignupbot.prompts;
 
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 

@@ -1,4 +1,4 @@
-package com.github.havlli.raidsignupbot.promptkit;
+package com.github.havlli.raidsignupbot.prompts;
 
 import com.github.havlli.raidsignupbot.logger.Logger;
 import discord4j.common.util.Snowflake;
