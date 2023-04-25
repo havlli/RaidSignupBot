@@ -46,20 +46,21 @@ public class PrivateTextPrompt implements PromptStep {
                                 if (inputHandler != null) inputHandler.accept(message);
                                 return Mono.just(message);
                             })
-                            .onErrorResume(error -> {
-                                if (errorMessage != null) {
-                                    return privateChannelMono
-                                            .flatMap(channel -> channel.createMessage(errorMessage)
-                                                    .flatMap(message -> {
-                                                        collectGarbage(message);
-                                                        return Mono.just(message);
-                                                    }))
-                                            .then(this.getMono());
-                                } else {
-                                    return Mono.empty();
-                                }
-                            });
+                            .onErrorResume(error -> handleError(privateChannelMono));
                 });
+    }
+
+    private Mono<Message> handleError(Mono<PrivateChannel> privateChannelMono) {
+
+        if (errorMessage == null) return Mono.empty();
+
+        return privateChannelMono
+                .flatMap(channel -> channel.createMessage(errorMessage)
+                        .flatMap(message -> {
+                            collectGarbage(message);
+                            return Mono.just(message);
+                        }))
+                .then(this.getMono());
     }
 
     private void collectGarbage(Message message) {
@@ -70,7 +71,7 @@ public class PrivateTextPrompt implements PromptStep {
         return new Builder(event);
     }
 
-    static class Builder {
+    public static class Builder {
         private final ChatInputInteractionEvent event;
         private String promptMessage;
         private MessageGarbageCollector garbageCollector;
