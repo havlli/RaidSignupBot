@@ -1,21 +1,21 @@
 package com.github.havlli.raidsignupbot;
 
 import com.github.havlli.raidsignupbot.client.InitiateClient;
-import com.github.havlli.raidsignupbot.commands.CommandBuilder;
+import com.github.havlli.raidsignupbot.commands.CommandRegistrar;
+import com.github.havlli.raidsignupbot.commands.Commands;
 import com.github.havlli.raidsignupbot.events.EventSubscriber;
 import discord4j.core.GatewayDiscordClient;
 
 public class Application {
 
     public static void main(String[] args) {
-
         GatewayDiscordClient gatewayClient = InitiateClient.getGateway();
 
-        CommandBuilder commandBuilder = new CommandBuilder(gatewayClient);
-        commandBuilder.subscribeCommands();
+        CommandRegistrar commandRegistrar = new CommandRegistrar(gatewayClient);
+        commandRegistrar.registerCommands(Commands.getCommandsList());
 
-        EventSubscriber.subscribeEvents(gatewayClient);
-
+        EventSubscriber eventSubscriber = new EventSubscriber();
+        eventSubscriber.subscribeEvents(gatewayClient);
 
         InitiateClient.onDisconnect();
     }

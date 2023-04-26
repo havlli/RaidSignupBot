@@ -3,6 +3,7 @@ package com.github.havlli.raidsignupbot.events.createevent;
 import com.github.havlli.raidsignupbot.client.Dependencies;
 import com.github.havlli.raidsignupbot.embedgenerator.EmbedGenerator;
 import com.github.havlli.raidsignupbot.events.EventHandler;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
@@ -32,8 +33,9 @@ public class CreateEvent implements EventHandler {
                 Dependencies.getInstance().getEmbedEventService(),
                 Dependencies.getInstance().getSignupUserService()
         );
-        SignupBuilder signupBuilder = new SignupBuilder(event, embedGenerator);
-        signupBuilder.startBuildProcess();
+        Snowflake guild = event.getInteraction().getGuildId().orElse(Snowflake.of("0"));
+        EventPromptInteraction eventPromptInteraction = new EventPromptInteraction(event, embedGenerator, guild);
+        eventPromptInteraction.subscribePrompt();
 
         return event.createFollowup("Initiated process of creating event in your DMs, please continue there!")
                 .withEphemeral(true);

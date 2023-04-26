@@ -34,20 +34,20 @@ public class EventPromptInteraction {
 
     private final ChatInputInteractionEvent event;
     private final Snowflake guildId;
+    private final EmbedGenerator embedGenerator;
     private final GatewayDiscordClient client;
     private final MessageGarbageCollector garbageCollector;
     private final Logger logger;
     private final Mono<MessageChannel> messageChannel;
     private final EmbedEvent.Builder embedEventBuilder;
     private final InteractionFormatter formatter;
-    private final EmbedGenerator embedGenerator = new EmbedGenerator(
-            Dependencies.getInstance().getEmbedEventService(),
-            Dependencies.getInstance().getSignupUserService()
-    );
 
-    public EventPromptInteraction(ChatInputInteractionEvent event, Snowflake guildId) {
+    public EventPromptInteraction(ChatInputInteractionEvent event,
+                                  EmbedGenerator embedGenerator,
+                                  Snowflake guildId) {
         this.event = event;
         this.guildId = guildId;
+        this.embedGenerator = embedGenerator;
         this.client = event.getClient();
         this.messageChannel = fetchMessageChannel();
         this.logger = Dependencies.getInstance().getLogger();
@@ -56,7 +56,7 @@ public class EventPromptInteraction {
         this.formatter = new InteractionFormatter();
     }
 
-    public void startPrompt() {
+    public void subscribePrompt() {
         User user = event.getInteraction().getUser();
         embedEventBuilder.addAuthor(user);
 
@@ -64,7 +64,8 @@ public class EventPromptInteraction {
                 .timeout(Duration.ofSeconds(120))
                 .onErrorResume(TimeoutException.class, error -> messageChannel
                         .flatMap(channel -> channel.createMessage("Interaction timeout! Please try again."))
-                        .then(garbageCollector.cleanup(messageChannel).cast(Message.class)))
+                        .then(garbageCollector.cleanup(messageChannel)
+                                .cast(Message.class)))
                 .subscribe();
     }
 
@@ -168,7 +169,7 @@ public class EventPromptInteraction {
                 .withInteractionHandler(event -> {
                     embedEventBuilder.addDestinationChannel(event.getValues(), fetchOriginChannelId());
                     Snowflake channelId = Snowflake.of(event.getValues().get(0));
-                    String response = "Destination channel: " + buildChannelURL(guildId, channelId);
+                    String response = "Destination channel: " + formatter.channelURL(guildId, channelId);
 
                     return event.deferEdit()
                             .then(event.editReply(InteractionReplyEditSpec.builder()
@@ -241,44 +242,37 @@ public class EventPromptInteraction {
                         .cast(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage("Generating event..."))
                         .flatMap(message -> {
-
-                            Snowflake guildId = message.getGuildId().orElse(Snowflake.of(0));
                             Snowflake messageId = message.getId();
-                            Mono<Message> finalMessage = messageChannel
-                                    .flatMap(channel -> channel.createMessage("Event created in " +
-                                            buildMessageURL(guildId,destinationChannel,messageId)));
-
+                            EventDispatcher eventDispatcher = event.getClient().getEventDispatcher();
                             embedEventBuilder.addEmbedId(messageId);
                             EmbedEvent embedEvent = embedEventBuilder.build();
+                            embedGenerator.saveEmbedEvent(embedEvent);
+                            embedGenerator.subscribeInteractions(eventDispatcher, embedEvent);
+
+                            Mono<Message> finalMessage = messageChannel
+                                    .flatMap(channel -> channel.createMessage("Event created in " +
+                                            formatter.messageURL(guildId,destinationChannel,messageId)));
 
                             return message.edit(MessageEditSpec.builder()
                                     .contentOrNull(null)
                                     .addEmbed(embedGenerator.generateEmbed(embedEvent))
                                     .addAllComponents(embedGenerator.getLayoutComponents(embedEvent))
                                     .build())
-                                    .then(finalMessage);
+                                    .then(finalMessage)
+                                    .flatMap(ignored -> {
+                                        logger.log("EmbedEvent %s created in %s"
+                                                .formatted(messageId.asString(), destinationChannel.asString()));
+                                        return Mono.just(ignored);
+                                    });
                         })
-                        .flatMap(message -> {
+                        /*.flatMap(message -> {
                             EmbedEvent embedEvent = embedEventBuilder.getEmbedEvent();
                             EventDispatcher eventDispatcher = event.getClient().getEventDispatcher();
                             embedGenerator.saveEmbedEvent(embedEvent);
                             embedGenerator.subscribeInteractions(eventDispatcher, embedEvent);
                             return Mono.just(message);
-                        })
+                        })*/
                 );
-    }
-
-    public String buildMessageURL(Snowflake guildId, Snowflake channelId, Snowflake messageId) {
-        return "https://discord.com/channels/" +
-                guildId.asString() + "/" +
-                channelId.asString() + "/" +
-                messageId.asString();
-    }
-
-    public String buildChannelURL(Snowflake guildId, Snowflake channelId) {
-        return "https://discord.com/channels/" +
-                guildId.asString() + "/" +
-                channelId.asString();
     }
 
     public Mono<MessageChannel> fetchMessageChannel() {

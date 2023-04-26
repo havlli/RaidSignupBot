@@ -35,7 +35,6 @@ public class ScheduledTasks implements Tasks {
     }
 
     public Mono<Void> getSchedulerMono() {
-
         final int INTERVAL_SECONDS = 5;
         Duration duration = Duration.ofSeconds(INTERVAL_SECONDS);
 
@@ -50,7 +49,6 @@ public class ScheduledTasks implements Tasks {
     }
 
     private void printExpiredEmbedEvents() {
-
         logger.log("Scheduled check for expired EmbedEvents...");
         embedEventService.getExpiredEmbedEvents()
                 .forEach(embedEvent -> logger.log(embedEvent.getEmbedId()));
@@ -61,7 +59,6 @@ public class ScheduledTasks implements Tasks {
 
         embedEventService.getExpiredEmbedEvents()
                 .forEach(embedEvent -> {
-
                     Snowflake messageId = Snowflake.of(embedEvent.getEmbedId());
                     Snowflake channelId = Snowflake.of(embedEvent.getDestinationChannelId());
                     event.getClient()

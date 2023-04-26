@@ -21,8 +21,8 @@ public class EmbedEvent {
     private String memberSize;
     private boolean reservingEnabled;
     private String destinationChannelId;
-    private String embedId;
-    private String author;
+    private final String embedId;
+    private final String author;
     private boolean active;
     private List<SignupUser> signupUsers;
 
@@ -271,7 +271,7 @@ public class EmbedEvent {
                             .append(value)
                             .append("\n");
                 }
-            } catch (IllegalAccessException e) {
+            } catch (IllegalAccessException ignored) {
 
             }
         }
