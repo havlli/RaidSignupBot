@@ -33,7 +33,7 @@ public class EmbedEventDAO {
         }
     }
 
-    private static PreparedStatement createInsertEmbedEventPrep(Connection connection, EmbedEvent embedEvent) throws SQLException {
+    private PreparedStatement createInsertEmbedEventPrep(Connection connection, EmbedEvent embedEvent) throws SQLException {
         PreparedStatement insertEmbedEventPrep = connection.prepareStatement(Query.INSERT_EMBED_EVENT);
         insertEmbedEventPrep.setString(1, embedEvent.getEmbedId());
         insertEmbedEventPrep.setString(2, embedEvent.getName());
@@ -67,7 +67,7 @@ public class EmbedEventDAO {
         }
     }
 
-    private static EmbedEvent mapEmbedEventFromResultSet(ResultSet resultSet) throws SQLException {
+    private EmbedEvent mapEmbedEventFromResultSet(ResultSet resultSet) throws SQLException {
         String embedId = resultSet.getString(EmbedEventColumn.ID.toString());
         String name = resultSet.getString(EmbedEventColumn.NAME.toString());
         String description = resultSet.getString(EmbedEventColumn.DESCRIPTION.toString());
@@ -104,7 +104,7 @@ public class EmbedEventDAO {
             logger.log("There was error with processing updateExpiredEmbedEvent! " + e.getMessage());
         }
     }
-    private static PreparedStatement updateExpiredEmbedEventPrep(Connection connection, EmbedEvent embedEvent, boolean isActive) throws SQLException {
+    private PreparedStatement updateExpiredEmbedEventPrep(Connection connection, EmbedEvent embedEvent, boolean isActive) throws SQLException {
         int active = isActive ? 1 : 0;
         PreparedStatement preparedStatement = connection.prepareStatement(Query.UPDATE_EXPIRED_EMBED_EVENT);
         preparedStatement.setInt(1, active);

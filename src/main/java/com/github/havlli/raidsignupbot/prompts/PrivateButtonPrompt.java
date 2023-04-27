@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
 
-public class PrivateButtonPrompt implements PromptStep {
+public class PrivateButtonPrompt implements Prompt {
 
     private final ChatInputInteractionEvent event;
     private final MessageCreateSpec promptMessage;

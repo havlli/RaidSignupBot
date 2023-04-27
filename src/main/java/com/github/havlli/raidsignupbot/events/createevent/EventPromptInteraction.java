@@ -30,7 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-public class EventPromptInteraction {
+public class EventPromptInteraction implements Prompt {
 
     private final ChatInputInteractionEvent event;
     private final Snowflake guildId;
@@ -56,20 +56,22 @@ public class EventPromptInteraction {
         this.formatter = new InteractionFormatter();
     }
 
-    public void subscribePrompt() {
-        User user = event.getInteraction().getUser();
-        embedEventBuilder.addAuthor(user);
+    @Override
+    public Mono<Message> getMono() {
+        return chainedPromptWithTimeout();
+    }
 
-        chainedPrompt()
+    public Mono<Message> chainedPromptWithTimeout() {
+        return chainedPrompt()
                 .timeout(Duration.ofSeconds(120))
                 .onErrorResume(TimeoutException.class, error -> messageChannel
                         .flatMap(channel -> channel.createMessage("Interaction timeout! Please try again."))
                         .then(garbageCollector.cleanup(messageChannel)
-                                .cast(Message.class)))
-                .subscribe();
+                                .cast(Message.class)));
     }
 
     private Mono<Message> chainedPrompt() {
+        addUserToEvent();
         return promptName()
                 .flatMap(msg -> promptDescription())
                 .flatMap(msg -> promptDate())
@@ -273,6 +275,11 @@ public class EventPromptInteraction {
                             return Mono.just(message);
                         })*/
                 );
+    }
+
+    private void addUserToEvent() {
+        User user = event.getInteraction().getUser();
+        embedEventBuilder.addAuthor(user);
     }
 
     public Mono<MessageChannel> fetchMessageChannel() {

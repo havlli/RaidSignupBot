@@ -35,9 +35,9 @@ public class CreateEvent implements EventHandler {
         );
         Snowflake guild = event.getInteraction().getGuildId().orElse(Snowflake.of("0"));
         EventPromptInteraction eventPromptInteraction = new EventPromptInteraction(event, embedGenerator, guild);
-        eventPromptInteraction.subscribePrompt();
 
         return event.createFollowup("Initiated process of creating event in your DMs, please continue there!")
-                .withEphemeral(true);
+                .withEphemeral(true)
+                .flatMap(message -> eventPromptInteraction.getMono());
     }
 }

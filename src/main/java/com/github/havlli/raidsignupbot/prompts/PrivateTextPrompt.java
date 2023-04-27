@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-public class PrivateTextPrompt implements PromptStep {
+public class PrivateTextPrompt implements Prompt {
 
     private final ChatInputInteractionEvent event;
     private final String promptMessage;

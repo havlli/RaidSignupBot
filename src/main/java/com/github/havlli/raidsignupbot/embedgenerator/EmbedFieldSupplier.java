@@ -19,8 +19,7 @@ public class EmbedFieldSupplier implements FieldSupplier {
             int fieldIndex = entry.getKey();
             String fieldName = entry.getValue();
 
-            List<SignupUser> signupUsers = embedEvent.getSignupUsers();
-            List<SignupUser> matchingUsers = getMatchingUsers(fieldIndex, signupUsers);
+            List<SignupUser> matchingUsers = getMatchingUsers(fieldIndex, embedEvent.getSignupUsers());
             if (!matchingUsers.isEmpty()) {
                 boolean isOneLineField = fieldIndex < 0;
                 String fieldConcat = buildFieldConcat(fieldName, matchingUsers, isOneLineField);

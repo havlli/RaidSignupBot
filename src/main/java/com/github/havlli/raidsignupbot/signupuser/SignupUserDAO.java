@@ -34,7 +34,7 @@ public class SignupUserDAO {
         }
     }
 
-    private static PreparedStatement insertSignupUserPrep(SignupUser signupUser, String embedEventId, Connection connection) throws SQLException {
+    private PreparedStatement insertSignupUserPrep(SignupUser signupUser, String embedEventId, Connection connection) throws SQLException {
         PreparedStatement preparedStatement = connection.prepareStatement(Query.INSERT_SIGNUP_USER);
         preparedStatement.setString(1, signupUser.getId());
         preparedStatement.setString(2, signupUser.getUsername());
@@ -62,7 +62,7 @@ public class SignupUserDAO {
         }
     }
 
-    private static SignupUser mapSignupUserFromResultSet(ResultSet resultSet) throws SQLException {
+    private SignupUser mapSignupUserFromResultSet(ResultSet resultSet) throws SQLException {
         String userId = resultSet.getString(SignupUserColumn.USER_ID.toString());
         String username = resultSet.getString(SignupUserColumn.USERNAME.toString());
         int fieldIndex = resultSet.getInt(SignupUserColumn.FIELD_INDEX.toString());
@@ -70,7 +70,7 @@ public class SignupUserDAO {
         return new SignupUser(order, userId, username, fieldIndex);
     }
 
-    private static PreparedStatement selectSignupUsersByIdPrep(String embedEventId, Connection connection) throws SQLException {
+    private PreparedStatement selectSignupUsersByIdPrep(String embedEventId, Connection connection) throws SQLException {
         PreparedStatement preparedStatement = connection.prepareStatement(Query.SELECT_SIGNUP_USER_BY_ID);
         preparedStatement.setString(1, embedEventId);
         return preparedStatement;
@@ -87,7 +87,7 @@ public class SignupUserDAO {
         }
     }
 
-    private static PreparedStatement updateSignupUserFieldIndex(String userId, int fieldIndex, String embedEventId, Connection connection) throws SQLException {
+    private PreparedStatement updateSignupUserFieldIndex(String userId, int fieldIndex, String embedEventId, Connection connection) throws SQLException {
         PreparedStatement preparedStatement = connection.prepareStatement(Query.UPDATE_SIGNUP_USER_FIELD_INDEX);
         preparedStatement.setInt(1, fieldIndex);
         preparedStatement.setString(2, userId);
