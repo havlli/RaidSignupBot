@@ -11,21 +11,14 @@ import reactor.core.publisher.Mono;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-public class PrivateTextPrompt implements Prompt {
-
-    private final ChatInputInteractionEvent event;
-    private final String promptMessage;
-    private final MessageGarbageCollector garbageCollector;
+public class PrivateTextPrompt extends Prompt {
     private final Consumer<Message> inputHandler;
     private final String errorMessage;
 
     public PrivateTextPrompt(Builder builder) {
-        this.event = builder.event;
-        this.promptMessage = builder.promptMessage;
-        this.garbageCollector = builder.garbageCollector;
+        super(builder.event, builder.promptMessage, builder.garbageCollector);
         this.inputHandler = builder.inputHandler;
         this.errorMessage = builder.errorMessage;
-
     }
 
     @Override
@@ -71,25 +64,22 @@ public class PrivateTextPrompt implements Prompt {
         return new Builder(event);
     }
 
-    public static class Builder {
-        private final ChatInputInteractionEvent event;
-        private String promptMessage;
-        private MessageGarbageCollector garbageCollector;
+    public static class Builder extends PromptBuilder<Builder, PrivateTextPrompt> {
         private Consumer<Message> inputHandler;
         private String errorMessage;
 
-        Builder(ChatInputInteractionEvent event) {
-            this.event = event;
+        private Builder(ChatInputInteractionEvent event) {
+            super(event);
         }
 
-        public Builder withPromptMessage(String promptMessage) {
-            this.promptMessage = promptMessage;
+        @Override
+        protected Builder self() {
             return this;
         }
 
-        public Builder withGarbageCollector(MessageGarbageCollector garbageCollector) {
-            this.garbageCollector = garbageCollector;
-            return this;
+        @Override
+        protected PrivateTextPrompt doBuild() {
+            return new PrivateTextPrompt(this);
         }
 
         public Builder withInputHandler(Consumer<Message> inputHandler) {
@@ -100,10 +90,6 @@ public class PrivateTextPrompt implements Prompt {
         public Builder withOnErrorMessage(String errorMessage) {
             this.errorMessage = errorMessage;
             return this;
-        }
-
-        public PrivateTextPrompt build() {
-            return new PrivateTextPrompt(this);
         }
     }
 }

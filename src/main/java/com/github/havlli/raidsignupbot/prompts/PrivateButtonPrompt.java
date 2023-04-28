@@ -7,25 +7,18 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.PrivateChannel;
-import discord4j.core.spec.MessageCreateSpec;
 import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
 
-public class PrivateButtonPrompt implements Prompt {
-
-    private final ChatInputInteractionEvent event;
-    private final MessageCreateSpec promptMessage;
+public class PrivateButtonPrompt extends Prompt {
     private final Function<ButtonInteractionEvent, Mono<Message>> interactionHandler;
     private final ButtonRowComponent buttonRowComponent;
-    private final MessageGarbageCollector garbageCollector;
 
     public PrivateButtonPrompt(Builder builder) {
-        this.event = builder.event;
-        this.promptMessage = builder.promptMessage;
+        super(builder.event, builder.promptMessage, builder.garbageCollector);
         this.interactionHandler = builder.interactionHandler;
         this.buttonRowComponent = builder.buttonRowComponent;
-        this.garbageCollector = builder.garbageCollector;
     }
 
     @Override
@@ -64,27 +57,22 @@ public class PrivateButtonPrompt implements Prompt {
         return new Builder(event);
     }
 
-    public static class Builder {
-        private final ChatInputInteractionEvent event;
-        private MessageCreateSpec promptMessage;
+    public static class Builder extends PromptBuilder<Builder, PrivateButtonPrompt> {
         private Function<ButtonInteractionEvent, Mono<Message>> interactionHandler;
         private ButtonRowComponent buttonRowComponent;
-        private MessageGarbageCollector garbageCollector;
 
         public Builder(ChatInputInteractionEvent event) {
-            this.event = event;
+            super(event);
         }
 
-        public Builder withPromptMessage(String promptMessage) {
-            this.promptMessage = MessageCreateSpec.builder()
-                    .content(promptMessage)
-                    .build();
+        @Override
+        protected Builder self() {
             return this;
         }
 
-        public Builder withPromptMessage(MessageCreateSpec promptMessage) {
-            this.promptMessage = promptMessage;
-            return this;
+        @Override
+        protected PrivateButtonPrompt doBuild() {
+            return new PrivateButtonPrompt(this);
         }
 
         public Builder withInteractionHandler(Function<ButtonInteractionEvent, Mono<Message>> interactionHandler) {
@@ -95,15 +83,6 @@ public class PrivateButtonPrompt implements Prompt {
         public Builder withButtonRowComponent(ButtonRowComponent buttonRowComponent) {
             this.buttonRowComponent = buttonRowComponent;
             return this;
-        }
-
-        public Builder withGarbageCollector(MessageGarbageCollector garbageCollector) {
-            this.garbageCollector = garbageCollector;
-            return this;
-        }
-
-        public PrivateButtonPrompt build() {
-            return new PrivateButtonPrompt(this);
         }
     }
 }

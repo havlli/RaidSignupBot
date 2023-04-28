@@ -11,20 +11,14 @@ import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
 
-public class PrivateSelectPrompt implements Prompt {
-
-    private final ChatInputInteractionEvent event;
-    private final String promptMessage;
+public class PrivateSelectPrompt extends Prompt {
     private final Function<SelectMenuInteractionEvent, Mono<Message>> interactionHandler;
     private final SelectMenuComponent selectMenuComponent;
-    private final MessageGarbageCollector garbageCollector;
 
     public PrivateSelectPrompt(Builder builder) {
-        this.event = builder.event;
-        this.promptMessage = builder.promptMessage;
+        super(builder.event, builder.promptMessage, builder.garbageCollector);
         this.interactionHandler = builder.interactionHandler;
         this.selectMenuComponent = builder.selectMenuComponent;
-        this.garbageCollector = builder.garbageCollector;
     }
 
     @Override
@@ -34,8 +28,8 @@ public class PrivateSelectPrompt implements Prompt {
         Mono<PrivateChannel> privateChannelMono = user.getPrivateChannel();
 
         return privateChannelMono
-                .flatMap(channel -> channel.createMessage(promptMessage)
-                        .withComponents(selectMenuComponent.getActionRow()))
+                .flatMap(channel -> channel.createMessage(promptMessage
+                        .withComponents(selectMenuComponent.getActionRow())))
                 .flatMap(message -> {
                     collectGarbage(message);
                     return eventDispatcher.on(SelectMenuInteractionEvent.class)
@@ -57,20 +51,22 @@ public class PrivateSelectPrompt implements Prompt {
         return new Builder(event);
     }
 
-    public static class Builder {
-        private final ChatInputInteractionEvent event;
-        private String promptMessage;
+    public static class Builder extends PromptBuilder<Builder, PrivateSelectPrompt> {
         private Function<SelectMenuInteractionEvent, Mono<Message>> interactionHandler;
         private SelectMenuComponent selectMenuComponent;
-        private MessageGarbageCollector garbageCollector;
 
         private Builder(ChatInputInteractionEvent event) {
-            this.event = event;
+            super(event);
         }
 
-        public Builder withPromptMessage(String promptMessage) {
-            this.promptMessage = promptMessage;
+        @Override
+        protected Builder self() {
             return this;
+        }
+
+        @Override
+        protected PrivateSelectPrompt doBuild() {
+            return new PrivateSelectPrompt(this);
         }
 
         public Builder withInteractionHandler(Function<SelectMenuInteractionEvent, Mono<Message>> interactionHandler) {
@@ -81,15 +77,6 @@ public class PrivateSelectPrompt implements Prompt {
         public Builder withSelectMenuComponent(SelectMenuComponent selectMenuComponent) {
             this.selectMenuComponent = selectMenuComponent;
             return this;
-        }
-
-        public Builder withGarbageCollector(MessageGarbageCollector garbageCollector) {
-            this.garbageCollector = garbageCollector;
-            return this;
-        }
-
-        public PrivateSelectPrompt build() {
-            return new PrivateSelectPrompt(this);
         }
     }
 }

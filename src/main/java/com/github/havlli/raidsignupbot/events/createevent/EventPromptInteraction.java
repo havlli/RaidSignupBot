@@ -30,7 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-public class EventPromptInteraction implements Prompt {
+public class EventPromptInteraction {
 
     private final ChatInputInteractionEvent event;
     private final Snowflake guildId;
@@ -56,7 +56,6 @@ public class EventPromptInteraction implements Prompt {
         this.formatter = new InteractionFormatter();
     }
 
-    @Override
     public Mono<Message> getMono() {
         return chainedPromptWithTimeout();
     }
