@@ -10,6 +10,8 @@ import discord4j.core.object.entity.Message;
 import reactor.core.publisher.Mono;
 
 public class CreateEvent implements EventHandler {
+
+    private static final String COMMAND_NAME = "create-event";
     @Override
     public Class<? extends Event> getEventType() {
         return ChatInputInteractionEvent.class;
@@ -18,7 +20,7 @@ public class CreateEvent implements EventHandler {
     @Override
     public Mono<?> handleEvent(Event event) {
         ChatInputInteractionEvent interactionEvent = (ChatInputInteractionEvent) event;
-        if (interactionEvent.getCommandName().equals("create-event")) {
+        if (interactionEvent.getCommandName().equals(COMMAND_NAME)) {
 
             return interactionEvent.deferReply()
                     .withEphemeral(true)
@@ -34,10 +36,10 @@ public class CreateEvent implements EventHandler {
                 Dependencies.getInstance().getSignupUserService()
         );
         Snowflake guild = event.getInteraction().getGuildId().orElse(Snowflake.of("0"));
-        EventPromptInteraction eventPromptInteraction = new EventPromptInteraction(event, embedGenerator, guild);
+        CreateEventPrompt createEventPrompt = new CreateEventPrompt(event, embedGenerator, guild);
 
         return event.createFollowup("Initiated process of creating event in your DMs, please continue there!")
                 .withEphemeral(true)
-                .flatMap(message -> eventPromptInteraction.getMono());
+                .flatMap(message -> createEventPrompt.getMono());
     }
 }

@@ -30,7 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-public class EventPromptInteraction {
+public class CreateEventPrompt {
 
     private final ChatInputInteractionEvent event;
     private final Snowflake guildId;
@@ -42,9 +42,9 @@ public class EventPromptInteraction {
     private final EmbedEvent.Builder embedEventBuilder;
     private final InteractionFormatter formatter;
 
-    public EventPromptInteraction(ChatInputInteractionEvent event,
-                                  EmbedGenerator embedGenerator,
-                                  Snowflake guildId) {
+    public CreateEventPrompt(ChatInputInteractionEvent event,
+                             EmbedGenerator embedGenerator,
+                             Snowflake guildId) {
         this.event = event;
         this.guildId = guildId;
         this.embedGenerator = embedGenerator;
@@ -266,13 +266,6 @@ public class EventPromptInteraction {
                                         return Mono.just(ignored);
                                     });
                         })
-                        /*.flatMap(message -> {
-                            EmbedEvent embedEvent = embedEventBuilder.getEmbedEvent();
-                            EventDispatcher eventDispatcher = event.getClient().getEventDispatcher();
-                            embedGenerator.saveEmbedEvent(embedEvent);
-                            embedGenerator.subscribeInteractions(eventDispatcher, embedEvent);
-                            return Mono.just(message);
-                        })*/
                 );
     }
 

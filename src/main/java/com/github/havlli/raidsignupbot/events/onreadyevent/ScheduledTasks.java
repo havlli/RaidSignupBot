@@ -35,7 +35,7 @@ public class ScheduledTasks implements Tasks {
     }
 
     public Mono<Void> getSchedulerMono() {
-        final int INTERVAL_SECONDS = 5;
+        final int INTERVAL_SECONDS = 60;
         Duration duration = Duration.ofSeconds(INTERVAL_SECONDS);
 
         logger.log("Scheduler registered");
