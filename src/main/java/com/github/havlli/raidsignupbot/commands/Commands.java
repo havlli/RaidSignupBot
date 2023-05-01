@@ -7,6 +7,7 @@ public class Commands {
     public static final List<String> COMMANDS = List.of(
             "create-event.json",
             "delete-event.json",
+            "edit-event.json",
             "test.json"
     );
 

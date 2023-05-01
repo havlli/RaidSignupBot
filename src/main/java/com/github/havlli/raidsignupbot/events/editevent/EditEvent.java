@@ -1,5 +1,7 @@
 package com.github.havlli.raidsignupbot.events.editevent;
 
+import com.github.havlli.raidsignupbot.client.Dependencies;
+import com.github.havlli.raidsignupbot.embedgenerator.EmbedGenerator;
 import com.github.havlli.raidsignupbot.events.EventHandler;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
@@ -67,9 +69,15 @@ public class EditEvent implements EventHandler {
     }
 
     private Mono<Message> handleEventEdit(ChatInputInteractionEvent event, Message message) {
+        EmbedGenerator embedGenerator = new EmbedGenerator(
+                Dependencies.getInstance().getEmbedEventService(),
+                Dependencies.getInstance().getSignupUserService()
+        );
+        EditEventPrompt editEventPrompt = new EditEventPrompt(event, message, embedGenerator);
+
         return event.createFollowup("Initiated process of editing event in your DMs, please continue there!")
                 .withEphemeral(true)
-                .then(Mono.empty());
+                .then(editEventPrompt.initiateEditEvent());
     }
 
     private Mono<Message> eventNotFoundResponse(ChatInputInteractionEvent event) {
