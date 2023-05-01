@@ -32,7 +32,8 @@ public class ButtonRow implements ButtonRowComponent {
     public static class Builder {
         public enum buttonType {
             PRIMARY,
-            SECONDARY
+            SECONDARY,
+            DANGER
         }
         private final List<Button> buttons;
         private final List<String> customIds;
@@ -51,6 +52,10 @@ public class ButtonRow implements ButtonRowComponent {
                 }
                 case SECONDARY -> {
                     buttons.add(Button.secondary(customId, label));
+                    customIds.add(customId);
+                }
+                case DANGER -> {
+                    buttons.add(Button.danger(customId, label));
                     customIds.add(customId);
                 }
             }

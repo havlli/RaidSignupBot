@@ -209,7 +209,7 @@ public class CreateEventPrompt {
     private Mono<Message> promptConfirmation() {
         return PrivateButtonPrompt.builder(event)
                 .withPromptMessage(MessageCreateSpec.builder()
-                        .addEmbed(embedGenerator.getPreviewEmbed(embedEventBuilder))
+                        .addEmbed(embedGenerator.generatePreviewEmbed(embedEventBuilder))
                         .build())
                 .withGarbageCollector(garbageCollector)
                 .withButtonRowComponent(ButtonRow.builder()
@@ -247,7 +247,7 @@ public class CreateEventPrompt {
                             EventDispatcher eventDispatcher = event.getClient().getEventDispatcher();
                             embedEventBuilder.addEmbedId(messageId);
                             EmbedEvent embedEvent = embedEventBuilder.build();
-                            embedGenerator.saveEmbedEvent(embedEvent);
+                            embedGenerator.acceptEmbedEvent(embedEvent);
                             embedGenerator.subscribeInteractions(eventDispatcher, embedEvent);
 
                             Mono<Message> finalMessage = messageChannel

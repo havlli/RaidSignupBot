@@ -110,6 +110,21 @@ public class EmbedEvent {
         private String author;
         private EmbedEvent embedEvent;
 
+        private Builder() {}
+
+        public Builder(EmbedEvent embedEvent) {
+            this.name = embedEvent.getName();
+            this.description = embedEvent.getDescription();
+            this.date = embedEvent.getDate();
+            this.time = embedEvent.getTime();
+            this.instances = embedEvent.getInstances();
+            this.memberSize = embedEvent.getMemberSize();
+            this.reservingEnabled = embedEvent.isReservingEnabled();
+            this.destinationChannelId = embedEvent.getDestinationChannelId();
+            this.embedId = embedEvent.getEmbedId();
+            this.author = embedEvent.getAuthor();
+        }
+
         public Builder addName(String name) {
             this.name = name;
             return this;
