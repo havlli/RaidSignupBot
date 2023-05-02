@@ -52,12 +52,16 @@ public class EmbedGenerator {
                 .build();
     }
 
-    public void saveEmbedEvent(EmbedEvent embedEvent) {
+    public void acceptEmbedEvent(EmbedEvent embedEvent) {
         embedEventService.addEmbedEvent(embedEvent);
     }
 
-    public EmbedCreateSpec getPreviewEmbed(EmbedEvent.Builder embedEventBuilder) {
+    public EmbedCreateSpec generatePreviewEmbed(EmbedEvent.Builder embedEventBuilder) {
         return embedPreview.buildPreview(embedEventBuilder);
+    }
+
+    public void updatePreviewEmbed(String name, String newValue) {
+        embedPreview.updateFieldList(name, newValue);
     }
 
     public List<LayoutComponent> getLayoutComponents(EmbedEvent embedEvent) {

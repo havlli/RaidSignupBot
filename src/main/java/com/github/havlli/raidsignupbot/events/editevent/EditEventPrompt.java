@@ -9,9 +9,12 @@ import com.github.havlli.raidsignupbot.logger.Logger;
 import com.github.havlli.raidsignupbot.prompts.MessageGarbageCollector;
 import com.github.havlli.raidsignupbot.prompts.PrivateButtonPrompt;
 import com.github.havlli.raidsignupbot.prompts.PrivateSelectPrompt;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.MessageChannel;
+import discord4j.core.object.entity.channel.PrivateChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import reactor.core.publisher.Mono;
 
@@ -34,11 +37,11 @@ public class EditEventPrompt {
     }
 
     public Mono<Message> initiateEditEvent() {
+        Mono<PrivateChannel> privateChannelMono = event.getInteraction().getUser().getPrivateChannel();
 
-        Mono<Message> chainedHandlerResult = PrivateSelectPrompt.builder(event)
+        return PrivateSelectPrompt.builder(event)
                 .withGarbageCollector(garbageCollector)
                 .withPromptMessage(MessageCreateSpec.builder()
-                        .addEmbed(embedGenerator.generatePreviewEmbed(builder))
                         .content("What would you like to change?")
                         .build())
                 .withSelectMenuComponent(new EditEventSelectMenu())
@@ -46,19 +49,24 @@ public class EditEventPrompt {
                     String option = event.getValues().get(0);
                     EditField editField = EditField.fromStringValue(option);
 
-                    return chainedHandler(editField, event, builder);
+                    return chainedHandler(editField, event);
                 })
                 .build()
-                .getMono();
-
-        return chainedHandlerResult
-                .flatMap(ignored -> confirmChangesMono());
+                .getMono()
+                .onErrorResume(error -> privateChannelMono
+                        .flatMap(channel -> channel.createMessage("Invalid format! Try again with correct format.")
+                                .flatMap(message -> {
+                                    garbageCollector.collectMessage(message);
+                                    return Mono.just(message);
+                                }))
+                        .then(initiateEditEvent()))
+                .flatMap(message -> confirmChangesMono());
     }
 
     private Mono<Message> confirmChangesMono() {
         System.out.println("confirmChangesMono: " + builder.getName());
+
         return PrivateButtonPrompt.builder(event)
-                .withGarbageCollector(garbageCollector)
                 .withPromptMessage(MessageCreateSpec.builder()
                         .addEmbed(embedGenerator.generatePreviewEmbed(builder))
                         .content("Confirm changes")
@@ -72,13 +80,22 @@ public class EditEventPrompt {
                     String customId = buttonAction.getCustomId();
                     return switch (customId) {
                         case "confirm" -> Mono.empty();
-                        case "more" -> initiateEditEvent();
+                        case "more" -> editMoreChain(buttonAction);
                         case "cancel" -> Mono.empty();
                         default -> Mono.empty();
                     };
                 })
                 .build()
                 .getMono();
+    }
+
+    private Mono<Message> editMoreChain(ButtonInteractionEvent event) {
+        Mono<MessageChannel> messageChannelMono = event.getInteraction().getChannel();
+        return event.deferEdit()
+                .then(garbageCollector.cleanup(messageChannelMono))
+                .then(event.deleteReply())
+                .then(initiateEditEvent())
+                .then(Mono.empty());
     }
 
     private EmbedEvent.Builder fetchBuilder() {
@@ -93,8 +110,8 @@ public class EditEventPrompt {
         return EmbedEvent.builder();
     }
 
-    private Mono<Message> chainedHandler(EditField editField, SelectMenuInteractionEvent event, EmbedEvent.Builder builder) {
-        EditHandler nameEditHandler = new NameEditHandler(null);
-        return nameEditHandler.handleEditEvent(editField, event, builder);
+    private Mono<Message> chainedHandler(EditField editField, SelectMenuInteractionEvent event) {
+        EditHandler nameEditHandler = new TextEditHandler(null, event, builder, embedGenerator);
+        return nameEditHandler.handleEditEvent(editField);
     }
 }

@@ -5,6 +5,7 @@ import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 public class EmbedEventPersistence {
     private static HashSet<EmbedEvent> embedEventHashSet;
@@ -40,5 +41,11 @@ public class EmbedEventPersistence {
 
     public void removeEmbedEvent(EmbedEvent embedEvent) {
         embedEventHashSet.remove(embedEvent);
+    }
+
+    public Optional<EmbedEvent> getEmbedEventById(String embedId) {
+        return embedEventHashSet.stream()
+                .filter(embedEvent -> embedEvent.getEmbedId().equals(embedId))
+                .findFirst();
     }
 }
