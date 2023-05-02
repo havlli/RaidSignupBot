@@ -31,6 +31,7 @@ public class MessageGarbageCollector {
                     .flatMap(channel -> channel.getMessageById(Snowflake.of(id)))
                     .flatMap(this::deleteMessage));
         }
+        messageList.clear();
 
         return chainedMono;
     }
