@@ -6,7 +6,9 @@ public enum EditField {
     DATE("date"),
     TIME("time"),
     INSTANCES("instances"),
-    RESERVE("reserve");
+    MEMBER_SIZE("member-size"),
+    RESERVE("reserve"),
+    DESTINATION_CHANNEL("destination-channel");
 
     private final String stringValue;
     EditField(String stringValue) {

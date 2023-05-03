@@ -19,10 +19,7 @@ public class EmbedPreview {
         addFieldIfNotPresent(Field.INSTANCES.getName(), embedEventBuilder.getInstances(), false);
         addFieldIfNotPresent(Field.MEMBER_SIZE.getName(), embedEventBuilder.getMemberSize(), false);
         addFieldIfNotPresent(Field.DEST_CHANNEL.getName(), embedEventBuilder.getDestinationChannelId(), false);
-        if (embedEventBuilder.isReservingEnabled()) {
-            EmbedCreateFields.Field reservingEnabled = EmbedCreateFields.Field.of(Field.RESERVE.getName(), "", false);
-            addFieldIfNotPresent(reservingEnabled);
-        }
+        addFieldIfNotPresent(Field.RESERVE.getName(), embedEventBuilder.isReservingEnabled() ? "Enabled" : "Disabled", false);
         return EmbedCreateSpec.builder()
                 .addAllFields(fieldList)
                 .build();
@@ -59,7 +56,7 @@ public class EmbedPreview {
         INSTANCES("Raids"),
         MEMBER_SIZE("Raid Size"),
         DEST_CHANNEL("Channel ID"),
-        RESERVE("Soft-reserve enabled");
+        RESERVE("Soft-Reserve");
 
         private final String fieldName;
         Field(String fieldName) {

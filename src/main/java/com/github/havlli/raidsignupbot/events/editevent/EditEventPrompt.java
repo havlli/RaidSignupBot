@@ -25,14 +25,13 @@ public class EditEventPrompt {
     private final MessageGarbageCollector garbageCollector;
     private final EmbedEvent.Builder builder;
     private final EmbedGenerator embedGenerator;
-    private final Logger logger;
 
     public EditEventPrompt(ChatInputInteractionEvent event, Message targetMessage, EmbedGenerator embedGenerator) {
         this.event = event;
         this.targetMessage = targetMessage;
         this.embedGenerator = embedGenerator;
         this.builder = fetchBuilder();
-        this.logger = Dependencies.getInstance().getLogger();
+        Logger logger = Dependencies.getInstance().getLogger();
         this.garbageCollector = new MessageGarbageCollector(logger);
     }
 
@@ -49,13 +48,14 @@ public class EditEventPrompt {
                     String option = event.getValues().get(0);
                     EditField editField = EditField.fromStringValue(option);
 
-                    return chainedHandler(editField, event);
+                    return chainedHandlers(editField, event);
                 })
                 .build()
                 .getMono()
                 .onErrorResume(error -> privateChannelMono
                         .flatMap(channel -> channel.createMessage("Invalid format! Try again with correct format.")
                                 .flatMap(message -> {
+                                    System.out.println(error.getMessage());
                                     garbageCollector.collectMessage(message);
                                     return Mono.just(message);
                                 }))
@@ -69,7 +69,6 @@ public class EditEventPrompt {
         return PrivateButtonPrompt.builder(event)
                 .withPromptMessage(MessageCreateSpec.builder()
                         .addEmbed(embedGenerator.generatePreviewEmbed(builder))
-                        .content("Confirm changes")
                         .build())
                 .withButtonRowComponent(ButtonRow.builder()
                         .addButton("confirm", "Confirm", ButtonRow.Builder.buttonType.PRIMARY)
@@ -110,8 +109,10 @@ public class EditEventPrompt {
         return EmbedEvent.builder();
     }
 
-    private Mono<Message> chainedHandler(EditField editField, SelectMenuInteractionEvent event) {
+    private Mono<Message> chainedHandlers(EditField editField, SelectMenuInteractionEvent event) {
         EditHandler nameEditHandler = new TextEditHandler(null, event, builder, embedGenerator);
-        return nameEditHandler.handleEditEvent(editField);
+        EditHandler selectionEditHandler = new SelectionEditHandler(nameEditHandler, event, builder, embedGenerator);
+        EditHandler buttonEditHandler = new ButtonEditHandler(selectionEditHandler, event, builder, embedGenerator);
+        return buttonEditHandler.handleEditEvent(editField);
     }
 }

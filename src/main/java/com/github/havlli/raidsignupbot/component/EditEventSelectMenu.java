@@ -38,6 +38,7 @@ public class EditEventSelectMenu implements SelectMenuComponent {
         selectMenuOptions.add(SelectMenu.Option.of("Date", EditField.DATE.getStringValue()));
         selectMenuOptions.add(SelectMenu.Option.of("Time", EditField.TIME.getStringValue()));
         selectMenuOptions.add(SelectMenu.Option.of("Instances", EditField.INSTANCES.getStringValue()));
+        selectMenuOptions.add(SelectMenu.Option.of("Raid size", EditField.MEMBER_SIZE.getStringValue()));
         selectMenuOptions.add(SelectMenu.Option.of("Reserve Option", EditField.RESERVE.getStringValue()));
 
         return selectMenuOptions;

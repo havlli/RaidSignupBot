@@ -17,9 +17,6 @@ import java.util.function.Function;
 
 public class TextEditHandler extends EditHandler {
     private final EnumSet<EditField> handledFields;
-    private final SelectMenuInteractionEvent event;
-    private EmbedEvent.Builder builder;
-    private EmbedGenerator generator;
 
     public TextEditHandler(
             EditHandler successor,
@@ -27,10 +24,7 @@ public class TextEditHandler extends EditHandler {
             EmbedEvent.Builder builder,
             EmbedGenerator generator
     ) {
-        super(successor);
-        this.event = event;
-        this.builder = builder;
-        this.generator = generator;
+        super(successor, event, builder, generator);
         this.handledFields = populateHandledFields();
     }
 
@@ -56,11 +50,11 @@ public class TextEditHandler extends EditHandler {
                     return editPrompt(promptMessage, updateDescription);
                 }
                 case DATE -> {
-                    String promptMessage = "Enter new date for event!";
+                    String promptMessage = "Enter new date for event! (Format: YYYY-MM-dd)";
                     return editPrompt(promptMessage, updateDate);
                 }
                 case TIME -> {
-                    String promptMessage = "Enter new time for event!";
+                    String promptMessage = "Enter new time for event! (Format: HH:mm)";
                     return editPrompt(promptMessage, updateTime);
                 }
             }
