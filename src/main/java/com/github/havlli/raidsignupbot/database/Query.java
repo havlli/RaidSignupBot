@@ -47,4 +47,16 @@ public class Query {
             "UPDATE " + Table.EMBED_EVENT +
                     " SET " + EmbedEventColumn.ACTIVE + " = ?" +
                     " WHERE " + EmbedEventColumn.ID + " = ?";
+
+    public static final String UPDATE_EMBED_EVENT =
+            "UPDATE " + Table.EMBED_EVENT +
+                    " SET " +
+                    EmbedEventColumn.NAME + " = ?, " +
+                    EmbedEventColumn.DESCRIPTION + " = ?, " +
+                    EmbedEventColumn.DATE_TIME + " = ?, " +
+                    EmbedEventColumn.INSTANCES + " = ?, " +
+                    EmbedEventColumn.MEMBER_SIZE + " = ?, " +
+                    EmbedEventColumn.RESERVE_ENABLED + " = ?" +
+                    " WHERE " +
+                    EmbedEventColumn.ID + " = ?";
 }
