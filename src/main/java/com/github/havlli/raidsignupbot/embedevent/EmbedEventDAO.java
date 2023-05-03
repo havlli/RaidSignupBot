@@ -112,4 +112,29 @@ public class EmbedEventDAO {
 
         return preparedStatement;
     }
+
+    public void updateEmbedEvent(EmbedEvent embedEvent) {
+        try(Connection connection = DatabaseConnection.getConnection(provider);
+            PreparedStatement preparedStatement = updateEmbedEventPrep(connection, embedEvent)) {
+
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows != 1) logger.log("EmbedEvent wasn't updated");
+        } catch (SQLException e) {
+            logger.log("There was error with processing updateEmbedEvent! " + e.getMessage());
+        }
+    }
+
+    private PreparedStatement updateEmbedEventPrep(Connection connection, EmbedEvent embedEvent) throws SQLException {
+        PreparedStatement preparedStatement = connection.prepareStatement(Query.UPDATE_EMBED_EVENT);
+        preparedStatement.setString(1, embedEvent.getName());
+        preparedStatement.setString(2, embedEvent.getDescription());
+        preparedStatement.setString(3, embedEvent.getDateTimeString(" "));
+        preparedStatement.setString(4, embedEvent.getInstances());
+        preparedStatement.setString(5, embedEvent.getMemberSize());
+        preparedStatement.setInt(6, embedEvent.isReservingEnabled() ? 1 : 0);
+
+        preparedStatement.setString(7, embedEvent.getEmbedId());
+
+        return preparedStatement;
+    }
 }

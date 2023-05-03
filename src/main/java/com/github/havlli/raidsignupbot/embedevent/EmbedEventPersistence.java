@@ -43,6 +43,15 @@ public class EmbedEventPersistence {
         embedEventHashSet.remove(embedEvent);
     }
 
+    public void updateEmbedEvent(EmbedEvent updatedEmbedEvent) {
+        embedEventHashSet.forEach(embedEvent -> {
+            if (embedEvent.getEmbedId().equals(updatedEmbedEvent.getEmbedId())) {
+                embedEventHashSet.remove(embedEvent);
+                embedEventHashSet.add(updatedEmbedEvent);
+            }
+        });
+    }
+
     public Optional<EmbedEvent> getEmbedEventById(String embedId) {
         return embedEventHashSet.stream()
                 .filter(embedEvent -> embedEvent.getEmbedId().equals(embedId))

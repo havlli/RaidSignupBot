@@ -23,6 +23,11 @@ public class EmbedEventService {
         embedEventDAO.updateExpiredEmbedEvent(embedEvent, false);
     }
 
+    public void updateEmbedEvent(EmbedEvent embedEvent) {
+        embedEventPersistence.updateEmbedEvent(embedEvent);
+        embedEventDAO.updateEmbedEvent(embedEvent);
+    }
+
     public HashSet<EmbedEvent> getActiveEmbedEvents() {
         return embedEventPersistence.getData();
     }
