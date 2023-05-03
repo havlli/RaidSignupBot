@@ -28,6 +28,7 @@ public class EditEventPrompt {
 
     private final ChatInputInteractionEvent event;
     private final Message targetMessage;
+    private final EmbedEvent targetEmbedEvent;
     private final MessageGarbageCollector garbageCollector;
     private final EmbedEvent.Builder builder;
     private final EmbedGenerator embedGenerator;
@@ -43,6 +44,7 @@ public class EditEventPrompt {
         this.targetMessage = targetMessage;
         this.embedGenerator = embedGenerator;
         this.guildId = guildId;
+        this.targetEmbedEvent = fetchTargetEmbedEvent();
         this.builder = fetchBuilder();
         Logger logger = Dependencies.getInstance().getLogger();
         this.garbageCollector = new MessageGarbageCollector(logger);
@@ -114,6 +116,7 @@ public class EditEventPrompt {
         InteractionFormatter formatter = new InteractionFormatter();
 
         EmbedEvent embedEvent = builder.build();
+        embedEvent.setSignupUsers(targetEmbedEvent.getSignupUsers());
         embedGenerator.updateEmbedEvent(embedEvent);
 
         Snowflake destinationChannelId = Snowflake.of(embedEvent.getDestinationChannelId());
@@ -145,15 +148,16 @@ public class EditEventPrompt {
     }
 
     private EmbedEvent.Builder fetchBuilder() {
+        if (this.targetEmbedEvent != null) return new EmbedEvent.Builder(this.targetEmbedEvent);
+        return EmbedEvent.builder();
+    }
+
+    private EmbedEvent fetchTargetEmbedEvent() {
         String embedEventId = targetMessage.getId().asString();
-        EmbedEvent embedEvent = Dependencies.getInstance()
+        return Dependencies.getInstance()
                 .getEmbedEventPersistence()
                 .getEmbedEventById(embedEventId)
                 .orElse(null);
-
-        if (embedEvent != null) return new EmbedEvent.Builder(embedEvent);
-
-        return EmbedEvent.builder();
     }
 
     private Mono<Message> chainedHandlers(EditField editField, SelectMenuInteractionEvent event) {
