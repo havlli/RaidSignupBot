@@ -6,17 +6,23 @@ import com.github.havlli.raidsignupbot.component.EditEventSelectMenu;
 import com.github.havlli.raidsignupbot.embedevent.EmbedEvent;
 import com.github.havlli.raidsignupbot.embedgenerator.EmbedGenerator;
 import com.github.havlli.raidsignupbot.logger.Logger;
+import com.github.havlli.raidsignupbot.prompts.InteractionFormatter;
 import com.github.havlli.raidsignupbot.prompts.MessageGarbageCollector;
 import com.github.havlli.raidsignupbot.prompts.PrivateButtonPrompt;
 import com.github.havlli.raidsignupbot.prompts.PrivateSelectPrompt;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.PrivateChannel;
+import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.core.spec.MessageCreateSpec;
+import discord4j.core.spec.MessageEditSpec;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 public class EditEventPrompt {
 
@@ -25,11 +31,18 @@ public class EditEventPrompt {
     private final MessageGarbageCollector garbageCollector;
     private final EmbedEvent.Builder builder;
     private final EmbedGenerator embedGenerator;
+    private final Snowflake guildId;
 
-    public EditEventPrompt(ChatInputInteractionEvent event, Message targetMessage, EmbedGenerator embedGenerator) {
+    public EditEventPrompt(
+            ChatInputInteractionEvent event,
+            Message targetMessage,
+            EmbedGenerator embedGenerator,
+            Snowflake guildId
+    ) {
         this.event = event;
         this.targetMessage = targetMessage;
         this.embedGenerator = embedGenerator;
+        this.guildId = guildId;
         this.builder = fetchBuilder();
         Logger logger = Dependencies.getInstance().getLogger();
         this.garbageCollector = new MessageGarbageCollector(logger);
@@ -52,6 +65,7 @@ public class EditEventPrompt {
                 })
                 .build()
                 .getMono()
+                .flatMap(message -> confirmChangesMono())
                 .onErrorResume(error -> privateChannelMono
                         .flatMap(channel -> channel.createMessage("Invalid format! Try again with correct format.")
                                 .flatMap(message -> {
@@ -59,13 +73,11 @@ public class EditEventPrompt {
                                     garbageCollector.collectMessage(message);
                                     return Mono.just(message);
                                 }))
-                        .then(initiateEditEvent()))
-                .flatMap(message -> confirmChangesMono());
+                        .then(initiateEditEvent())
+                );
     }
 
     private Mono<Message> confirmChangesMono() {
-        System.out.println("confirmChangesMono: " + builder.getName());
-
         return PrivateButtonPrompt.builder(event)
                 .withPromptMessage(MessageCreateSpec.builder()
                         .addEmbed(embedGenerator.generatePreviewEmbed(builder))
@@ -78,7 +90,7 @@ public class EditEventPrompt {
                 .withInteractionHandler(buttonAction -> {
                     String customId = buttonAction.getCustomId();
                     return switch (customId) {
-                        case "confirm" -> Mono.empty();
+                        case "confirm" -> saveChanges(buttonAction);
                         case "more" -> editMoreChain(buttonAction);
                         case "cancel" -> Mono.empty();
                         default -> Mono.empty();
@@ -95,6 +107,41 @@ public class EditEventPrompt {
                 .then(event.deleteReply())
                 .then(initiateEditEvent())
                 .then(Mono.empty());
+    }
+
+    private Mono<Message> saveChanges(ButtonInteractionEvent event) {
+        Mono<MessageChannel> messageChannelMono = event.getInteraction().getChannel();
+        InteractionFormatter formatter = new InteractionFormatter();
+
+        EmbedEvent embedEvent = builder.build();
+        embedGenerator.updateEmbedEvent(embedEvent);
+
+        Snowflake destinationChannelId = Snowflake.of(embedEvent.getDestinationChannelId());
+        Snowflake messageId = targetMessage.getId();
+
+        Mono<Message> editTargetMessage = this.event.getInteraction().getGuild()
+                .flatMap(guild -> guild.getChannelById(destinationChannelId)
+                        .cast(MessageChannel.class)
+                        .flatMap(channel -> channel.getMessageById(messageId))
+                        .flatMap(message -> message.edit(MessageEditSpec.builder()
+                                        .contentOrNull(null)
+                                        .addEmbed(embedGenerator.generateEmbed(embedEvent))
+                                        .build())
+                        )
+                );
+
+        String messageURL = formatter.messageURL(guildId,destinationChannelId,messageId);
+        String response = "Event %s changed successfully!".formatted(messageURL);
+
+        return event.deferEdit()
+                .then(garbageCollector.cleanup(messageChannelMono))
+                .then(event.editReply(InteractionReplyEditSpec.builder()
+                                .contentOrNull(response)
+                                .embeds(List.of())
+                                .components(List.of())
+                        .build())
+                        .flatMap(message -> editTargetMessage)
+                );
     }
 
     private EmbedEvent.Builder fetchBuilder() {

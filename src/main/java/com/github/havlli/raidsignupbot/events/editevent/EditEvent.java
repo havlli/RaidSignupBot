@@ -73,7 +73,8 @@ public class EditEvent implements EventHandler {
                 Dependencies.getInstance().getEmbedEventService(),
                 Dependencies.getInstance().getSignupUserService()
         );
-        EditEventPrompt editEventPrompt = new EditEventPrompt(event, message, embedGenerator);
+        Snowflake guildId = event.getInteraction().getGuildId().orElse(Snowflake.of(0));
+        EditEventPrompt editEventPrompt = new EditEventPrompt(event, message, embedGenerator, guildId);
 
         return event.createFollowup("Initiated process of editing event in your DMs, please continue there!")
                 .withEphemeral(true)
