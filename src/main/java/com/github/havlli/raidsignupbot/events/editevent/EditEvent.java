@@ -53,18 +53,18 @@ public class EditEvent implements EventHandler {
                         .flatMap(channel -> channel.getMessageById(targetMessage).flux()
                                 .onErrorResume(error -> Mono.empty())
                         )
+                        .switchIfEmpty(eventNotFoundResponse(event))
                 )
-                .switchIfEmpty(eventNotFoundResponse(event))
                 .next()
                 .flatMap(message -> {
                     Optional<User> author = message.getAuthor();
                     boolean authorIsThisBot = author.isPresent() && author.get().getId().equals(botId);
-                    boolean isExpired = hasExpiredFlag(message.getComponents());
-                    if (authorIsThisBot && !isExpired) {
+                    boolean isTargetMessage = message.getId().equals(targetMessage);
+                    boolean notExpired = !hasExpiredFlag(message.getComponents());
+                    if (isTargetMessage && authorIsThisBot && notExpired) {
                         return handleEventEdit(event, message);
-                    } else {
-                        return eventNotFoundResponse(event);
                     }
+                    return Mono.empty();
                 });
     }
 
