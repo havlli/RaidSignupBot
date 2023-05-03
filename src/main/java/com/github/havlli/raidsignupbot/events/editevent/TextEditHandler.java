@@ -98,14 +98,14 @@ public class TextEditHandler extends EditHandler {
     private final Function<Message, Mono<Message>> updateDate = message -> {
         String newValue = message.getContent();
         builder.addDate(newValue);
-        generator.updatePreviewEmbed(EmbedPreview.Field.DESCRIPTION.getName(), newValue);
+        generator.updatePreviewEmbed(EmbedPreview.Field.DATE.getName(), newValue);
         return Mono.just(message);
     };
 
     private final Function<Message, Mono<Message>> updateTime = message -> {
         String newValue = message.getContent();
         builder.addTime(newValue);
-        generator.updatePreviewEmbed(EmbedPreview.Field.DESCRIPTION.getName(), newValue);
+        generator.updatePreviewEmbed(EmbedPreview.Field.TIME.getName(), newValue);
         return Mono.just(message);
     };
 }
