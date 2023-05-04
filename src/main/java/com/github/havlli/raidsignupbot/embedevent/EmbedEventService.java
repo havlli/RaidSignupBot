@@ -25,6 +25,7 @@ public class EmbedEventService {
 
     public void removeEmbedEvents(HashSet<String> messageIdsToDelete) {
         embedEventPersistence.removeEmbedEvents(messageIdsToDelete);
+        embedEventDAO.removeEmbedEvents(messageIdsToDelete);
     }
 
     public void updateEmbedEvent(EmbedEvent embedEvent) {

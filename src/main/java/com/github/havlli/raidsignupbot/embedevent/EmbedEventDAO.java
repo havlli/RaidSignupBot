@@ -6,11 +6,10 @@ import com.github.havlli.raidsignupbot.database.Query;
 import com.github.havlli.raidsignupbot.database.structure.EmbedEventColumn;
 import com.github.havlli.raidsignupbot.logger.Logger;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 public class EmbedEventDAO {
     private final ConnectionProvider provider;
@@ -136,5 +135,31 @@ public class EmbedEventDAO {
         preparedStatement.setString(7, embedEvent.getEmbedId());
 
         return preparedStatement;
+    }
+
+    public void removeEmbedEvents(HashSet<String> idsToDelete) {
+        List<String> idList = idsToDelete.stream().toList();
+        String ids = String.join(",", Collections.nCopies(idList.size(), "?"));
+        String editedQuery = Query.DELETE_EMBED_EVENTS_BY_IDS.replace("placeholder", ids);
+
+
+        try(Connection connection = DatabaseConnection.getConnection(provider);
+            PreparedStatement preparedStatement = connection.prepareStatement(editedQuery)) {
+
+            // TODO: Make config file for JDBC provider
+            Statement statement = connection.createStatement();
+            statement.execute("PRAGMA foreign_keys = ON;");
+
+            for (int i = 0; i < idsToDelete.size(); i++) {
+                preparedStatement.setString(i + 1, idList.get(i));
+            }
+
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows != idList.size()) {
+                logger.log("Only deleted " + affectedRows + " rows out of " + idList.size());
+            }
+        } catch (SQLException e) {
+            logger.log("There was error with processing removeEmbedEvents! " + e.getMessage());
+        }
     }
 }

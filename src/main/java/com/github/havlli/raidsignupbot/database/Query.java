@@ -59,4 +59,9 @@ public class Query {
                     EmbedEventColumn.RESERVE_ENABLED + " = ?" +
                     " WHERE " +
                     EmbedEventColumn.ID + " = ?";
+
+    public static final String DELETE_EMBED_EVENTS_BY_IDS =
+            "DELETE FROM " + Table.EMBED_EVENT +
+                    " WHERE " + EmbedEventColumn.ID +
+                    " IN (placeholder)";
 }

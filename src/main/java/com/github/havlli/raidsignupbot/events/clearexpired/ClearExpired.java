@@ -49,10 +49,8 @@ public class ClearExpired implements EventHandler {
                         HashSet<String> messageIdsToDelete = messages.stream()
                                 .map(message -> message.getId().asString())
                                 .collect(Collectors.toCollection(HashSet::new));
-                        EmbedEventService embedEventService = new EmbedEventService(
-                                Dependencies.getInstance().getEmbedEventDAO(),
-                                Dependencies.getInstance().getEmbedEventPersistence()
-                        );
+
+                        EmbedEventService embedEventService = Dependencies.getInstance().getEmbedEventService();
                         embedEventService.removeEmbedEvents(messageIdsToDelete);
 
                         String messageWord = count == 1 ? "message" : "messages";
