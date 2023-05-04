@@ -23,6 +23,10 @@ public class EmbedEventService {
         embedEventDAO.updateExpiredEmbedEvent(embedEvent, false);
     }
 
+    public void removeEmbedEvents(HashSet<String> messageIdsToDelete) {
+        embedEventPersistence.removeEmbedEvents(messageIdsToDelete);
+    }
+
     public void updateEmbedEvent(EmbedEvent embedEvent) {
         embedEventPersistence.updateEmbedEvent(embedEvent);
         embedEventDAO.updateEmbedEvent(embedEvent);

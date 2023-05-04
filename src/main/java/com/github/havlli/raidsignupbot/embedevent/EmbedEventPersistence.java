@@ -43,6 +43,10 @@ public class EmbedEventPersistence {
         embedEventHashSet.remove(embedEvent);
     }
 
+    public void removeEmbedEvents(HashSet<String> messageIdsToDelete) {
+        embedEventHashSet.removeIf(embedEvent -> messageIdsToDelete.contains(embedEvent.getEmbedId()));
+    }
+
     public void updateEmbedEvent(EmbedEvent updatedEmbedEvent) {
         embedEventHashSet.forEach(embedEvent -> {
             if (embedEvent.getEmbedId().equals(updatedEmbedEvent.getEmbedId())) {

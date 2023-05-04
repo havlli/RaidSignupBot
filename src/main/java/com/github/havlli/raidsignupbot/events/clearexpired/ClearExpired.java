@@ -1,5 +1,7 @@
 package com.github.havlli.raidsignupbot.events.clearexpired;
 
+import com.github.havlli.raidsignupbot.client.Dependencies;
+import com.github.havlli.raidsignupbot.embedevent.EmbedEventService;
 import com.github.havlli.raidsignupbot.events.EventHandler;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
@@ -8,6 +10,9 @@ import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import reactor.core.publisher.Mono;
+
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
 public class ClearExpired implements EventHandler {
 
@@ -38,12 +43,22 @@ public class ClearExpired implements EventHandler {
                 )
                 .collectList()
                 .flatMap(messages -> {
-                    String response;
                     int count = messages.size();
+                    String response;
                     if (count > 0) {
+                        HashSet<String> messageIdsToDelete = messages.stream()
+                                .map(message -> message.getId().asString())
+                                .collect(Collectors.toCollection(HashSet::new));
+                        EmbedEventService embedEventService = new EmbedEventService(
+                                Dependencies.getInstance().getEmbedEventDAO(),
+                                Dependencies.getInstance().getEmbedEventPersistence()
+                        );
+                        embedEventService.removeEmbedEvents(messageIdsToDelete);
+
                         String messageWord = count == 1 ? "message" : "messages";
                         response = String.format("Deleted %d %s in this channel.", count, messageWord);
-                    } else response = "No expired messages found in this channel.";
+                    }
+                    else response = "No expired messages found in this channel.";
 
                     return event.createFollowup(response);
                 });
