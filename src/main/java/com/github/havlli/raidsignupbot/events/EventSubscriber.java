@@ -1,5 +1,6 @@
 package com.github.havlli.raidsignupbot.events;
 
+import com.github.havlli.raidsignupbot.events.clearexpired.ClearExpired;
 import com.github.havlli.raidsignupbot.events.createevent.CreateEvent;
 import com.github.havlli.raidsignupbot.events.deleteevent.DeleteEvent;
 import com.github.havlli.raidsignupbot.events.editevent.EditEvent;
@@ -36,5 +37,6 @@ public class EventSubscriber {
         addEvent(new CreateEvent());
         addEvent(new DeleteEvent());
         addEvent(new EditEvent());
+        addEvent(new ClearExpired());
     }
 }

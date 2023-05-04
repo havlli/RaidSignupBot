@@ -8,6 +8,7 @@ public class Commands {
             "create-event.json",
             "delete-event.json",
             "edit-event.json",
+            "clear-expired.json",
             "test.json"
     );
 
