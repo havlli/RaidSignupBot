@@ -142,7 +142,6 @@ public class EmbedEventDAO {
         String ids = String.join(",", Collections.nCopies(idList.size(), "?"));
         String editedQuery = Query.DELETE_EMBED_EVENTS_BY_IDS.replace("placeholder", ids);
 
-
         try(Connection connection = DatabaseConnection.getConnection(provider);
             PreparedStatement preparedStatement = connection.prepareStatement(editedQuery)) {
 
