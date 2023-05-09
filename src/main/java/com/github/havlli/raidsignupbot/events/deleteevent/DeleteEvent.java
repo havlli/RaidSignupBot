@@ -1,5 +1,6 @@
 package com.github.havlli.raidsignupbot.events.deleteevent;
 
+import com.github.havlli.raidsignupbot.events.BasePermissionChecker;
 import com.github.havlli.raidsignupbot.events.EventHandler;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
@@ -7,6 +8,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
+import discord4j.rest.util.Permission;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -24,13 +26,16 @@ public class DeleteEvent implements EventHandler {
     public Mono<?> handleEvent(Event event) {
         ChatInputInteractionEvent interactionEvent = (ChatInputInteractionEvent) event;
         if (interactionEvent.getCommandName().equals(COMMAND_NAME)) {
+            BasePermissionChecker permissionChecker = new BasePermissionChecker(interactionEvent, Permission.MANAGE_CHANNELS);
 
-            return interactionEvent.deferReply().withEphemeral(true).then(deferredMessage(interactionEvent));
+            return interactionEvent.deferReply()
+                    .withEphemeral(true)
+                    .then(permissionChecker.followupWithMessage(followupInteraction(interactionEvent)));
         }
         return Mono.empty();
     }
 
-    private static Mono<Message> deferredMessage(ChatInputInteractionEvent event) {
+    private static Mono<Message> followupInteraction(ChatInputInteractionEvent event) {
         return event.getInteraction().getChannel()
                 .flatMap(messageChannel -> {
                     Snowflake messageId = event.getOption(OPTION_MESSAGE_ID)

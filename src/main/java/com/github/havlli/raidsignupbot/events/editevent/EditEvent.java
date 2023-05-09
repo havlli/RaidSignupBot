@@ -2,6 +2,7 @@ package com.github.havlli.raidsignupbot.events.editevent;
 
 import com.github.havlli.raidsignupbot.client.Dependencies;
 import com.github.havlli.raidsignupbot.embedgenerator.EmbedGenerator;
+import com.github.havlli.raidsignupbot.events.BasePermissionChecker;
 import com.github.havlli.raidsignupbot.events.EventHandler;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
@@ -13,6 +14,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.rest.util.Permission;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -32,14 +34,16 @@ public class EditEvent implements EventHandler {
     public Mono<?> handleEvent(Event event) {
         ChatInputInteractionEvent interactionEvent = (ChatInputInteractionEvent) event;
         if (interactionEvent.getCommandName().equals(COMMAND_NAME)) {
+            BasePermissionChecker permissionChecker = new BasePermissionChecker(interactionEvent, Permission.MANAGE_CHANNELS);
+
             return interactionEvent.deferReply()
                     .withEphemeral(true)
-                    .then(deferredMessage(interactionEvent));
+                    .then(permissionChecker.followupWithMessage(followupInteraction(interactionEvent)));
         }
         return Mono.empty();
     }
 
-    private Mono<Message> deferredMessage(ChatInputInteractionEvent event) {
+    private Mono<Message> followupInteraction(ChatInputInteractionEvent event) {
         Snowflake botId = event.getClient().getSelfId();
         Snowflake targetMessage = event.getOption(OPTION_MESSAGE_ID)
                 .flatMap(ApplicationCommandInteractionOption::getValue)
