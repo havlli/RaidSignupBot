@@ -11,6 +11,7 @@ import com.github.havlli.raidsignupbot.prompts.MessageGarbageCollector;
 import com.github.havlli.raidsignupbot.prompts.PrivateButtonPrompt;
 import com.github.havlli.raidsignupbot.prompts.PrivateSelectPrompt;
 import discord4j.common.util.Snowflake;
+import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
@@ -111,12 +112,13 @@ public class EditEventPrompt {
     }
 
     private Mono<Message> saveChanges(ButtonInteractionEvent event) {
+        EventDispatcher eventDispatcher = event.getClient().getEventDispatcher();
         Mono<MessageChannel> messageChannelMono = event.getInteraction().getChannel();
         InteractionFormatter formatter = new InteractionFormatter();
 
         EmbedEvent embedEvent = builder.build();
         embedEvent.setSignupUsers(targetEmbedEvent.getSignupUsers());
-        embedGenerator.updateEmbedEvent(embedEvent);
+        embedGenerator.updateEmbedEvent(eventDispatcher, embedEvent);
 
         Snowflake destinationChannelId = Snowflake.of(embedEvent.getDestinationChannelId());
         Snowflake messageId = targetMessage.getId();

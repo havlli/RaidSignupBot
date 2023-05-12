@@ -48,16 +48,17 @@ public class EmbedEventPersistence {
         embedEventHashSet.removeIf(embedEvent -> messageIdsToDelete.contains(embedEvent.getEmbedId()));
     }
 
-    public void updateEmbedEvent(EmbedEvent updatedEmbedEvent) {
+    public EmbedEvent updateEmbedEvent(EmbedEvent updatedEmbedEvent) {
         Iterator<EmbedEvent> iterator = embedEventHashSet.iterator();
         while (iterator.hasNext()) {
             EmbedEvent embedEvent = iterator.next();
             if(embedEvent.getEmbedId().equals(updatedEmbedEvent.getEmbedId())) {
                 iterator.remove();
                 embedEventHashSet.add(updatedEmbedEvent);
-                break;
+                return embedEvent;
             }
         }
+        return null;
     }
 
     public Optional<EmbedEvent> getEmbedEventById(String embedId) {

@@ -4,6 +4,7 @@ import com.github.havlli.raidsignupbot.signupuser.SignupUser;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
+import reactor.core.Disposable;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ public class EmbedEvent {
     private final String author;
     private boolean active;
     private List<SignupUser> signupUsers;
+    private List<Disposable> subscriptions;
 
     private EmbedEvent(Builder builder) {
         this.name = builder.name;
@@ -91,6 +93,14 @@ public class EmbedEvent {
 
     public void setSignupUsers(List<SignupUser> signupUserList) {
         signupUsers = signupUserList;
+    }
+
+    public void setSubscriptions(List<Disposable> subscriptions) {
+        this.subscriptions = subscriptions;
+    }
+
+    public List<Disposable> getSubscriptions() {
+        return subscriptions;
     }
 
     public static Builder builder() {

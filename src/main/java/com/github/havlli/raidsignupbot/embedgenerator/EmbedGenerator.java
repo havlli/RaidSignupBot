@@ -7,9 +7,11 @@ import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.LayoutComponent;
 import discord4j.core.spec.EmbedCreateSpec;
+import reactor.core.Disposable;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 public class EmbedGenerator {
@@ -56,8 +58,10 @@ public class EmbedGenerator {
         embedEventService.addEmbedEvent(embedEvent);
     }
 
-    public void updateEmbedEvent(EmbedEvent embedEvent) {
-        embedEventService.updateEmbedEvent(embedEvent);
+    public void updateEmbedEvent(EventDispatcher eventDispatcher, EmbedEvent newEmbedEvent) {
+        EmbedEvent oldEmbedEvent = embedEventService.updateEmbedEvent(newEmbedEvent);
+        unsubscribeInteractions(oldEmbedEvent);
+        subscribeInteractions(eventDispatcher, newEmbedEvent);
     }
     public EmbedCreateSpec generatePreviewEmbed(EmbedEvent.Builder embedEventBuilder) {
         return embedPreview.buildPreview(embedEventBuilder);
@@ -72,12 +76,21 @@ public class EmbedGenerator {
     }
 
     public void subscribeInteractions(EventDispatcher eventDispatcher, EmbedEvent embedEvent) {
+        List<Disposable> subscriptions = new ArrayList<>();
+
         EmbedFields.getFieldsMap().forEach((fieldKey, value) -> {
             String customId = embedEvent.getEmbedId() + DELIMITER + fieldKey;
-            eventDispatcher.on(ButtonInteractionEvent.class)
+            Disposable subscription = eventDispatcher.on(ButtonInteractionEvent.class)
                     .filter(event -> event.getCustomId().equals(customId))
                     .flatMap(interaction -> signupInteractionSubscriber.handleEvent(interaction, embedEvent))
                     .subscribe();
+            subscriptions.add(subscription);
         });
+
+        embedEvent.setSubscriptions(subscriptions);
+    }
+
+    public void unsubscribeInteractions(EmbedEvent embedEvent) {
+        embedEvent.getSubscriptions().forEach(Disposable::dispose);
     }
 }

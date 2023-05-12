@@ -28,9 +28,10 @@ public class EmbedEventService {
         embedEventDAO.removeEmbedEvents(messageIdsToDelete);
     }
 
-    public void updateEmbedEvent(EmbedEvent embedEvent) {
-        embedEventPersistence.updateEmbedEvent(embedEvent);
-        embedEventDAO.updateEmbedEvent(embedEvent);
+    public EmbedEvent updateEmbedEvent(EmbedEvent newEmbedEvent) {
+        EmbedEvent oldEmbedEvent = embedEventPersistence.updateEmbedEvent(newEmbedEvent);
+        embedEventDAO.updateEmbedEvent(newEmbedEvent);
+        return oldEmbedEvent;
     }
 
     public HashSet<EmbedEvent> getActiveEmbedEvents() {
