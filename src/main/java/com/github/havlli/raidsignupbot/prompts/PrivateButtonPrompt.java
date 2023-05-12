@@ -1,46 +1,49 @@
 package com.github.havlli.raidsignupbot.prompts;
 
 import com.github.havlli.raidsignupbot.component.ButtonRowComponent;
-import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.PrivateChannel;
+import discord4j.core.object.entity.channel.MessageChannel;
 import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
-public class PrivateButtonPrompt extends Prompt {
-    private final Function<ButtonInteractionEvent, Mono<Message>> interactionHandler;
+public class PrivateButtonPrompt extends BasicPrompt<ButtonInteractionEvent> {
+
     private final ButtonRowComponent buttonRowComponent;
 
     public PrivateButtonPrompt(Builder builder) {
-        super(builder.event, builder.promptMessage, builder.garbageCollector);
-        this.interactionHandler = builder.interactionHandler;
+        super(
+                builder.event,
+                builder.promptMessage,
+                builder.interactionHandler,
+                builder.garbageCollector,
+                ButtonInteractionEvent.class
+        );
         this.buttonRowComponent = builder.buttonRowComponent;
     }
 
     @Override
-    public Mono<Message> getMono() {
-        User user = event.getInteraction().getUser();
-        EventDispatcher eventDispatcher = event.getClient().getEventDispatcher();
-        Mono<PrivateChannel> privateChannelMono = user.getPrivateChannel();
+    protected Mono<? extends MessageChannel> interactionChannel() {
+        return event.getInteraction().getUser().getPrivateChannel();
+    }
 
-        return privateChannelMono
-                .flatMap(channel -> channel.createMessage(promptMessage
-                        .withComponents(buttonRowComponent.getActionRow())))
-                .flatMap(message -> {
-                    collectGarbage(message);
-                    return eventDispatcher.on(ButtonInteractionEvent.class)
-                            .filter(event -> event.getInteraction().getUser().equals(user))
-                            .filter(this::checkMatches)
-                            .next()
-                            .flatMap(event -> {
-                                if (interactionHandler != null) return interactionHandler.apply(event);
-                                return Mono.empty();
-                            });
-                });
+    @Override
+    protected Mono<Message> sendPrompt(MessageChannel channel) {
+        return channel.createMessage(promptMessage.withComponents(buttonRowComponent.getActionRow()));
+    }
+
+    @Override
+    protected Predicate<? super ButtonInteractionEvent> interactionFilter() {
+        User user = event.getInteraction().getUser();
+        return currentEvent -> {
+            boolean isSameUser = currentEvent.getInteraction().getUser().equals(user);
+            boolean areComponents = checkMatches(currentEvent);
+            return isSameUser && areComponents;
+        };
     }
 
     private boolean checkMatches(ButtonInteractionEvent event) {
@@ -49,15 +52,11 @@ public class PrivateButtonPrompt extends Prompt {
                 .anyMatch(customId -> customId.equals(event.getCustomId()));
     }
 
-    private void collectGarbage(Message message) {
-        if (garbageCollector != null) garbageCollector.collectMessage(message);
+    public static PrivateButtonPrompt.Builder builder(ChatInputInteractionEvent event) {
+        return new PrivateButtonPrompt.Builder(event);
     }
 
-    public static Builder builder(ChatInputInteractionEvent event) {
-        return new Builder(event);
-    }
-
-    public static class Builder extends PromptBuilder<Builder, PrivateButtonPrompt> {
+    public static class Builder extends PromptBuilder<PrivateButtonPrompt.Builder, PrivateButtonPrompt> {
         private Function<ButtonInteractionEvent, Mono<Message>> interactionHandler;
         private ButtonRowComponent buttonRowComponent;
 
@@ -66,7 +65,7 @@ public class PrivateButtonPrompt extends Prompt {
         }
 
         @Override
-        protected Builder self() {
+        protected PrivateButtonPrompt.Builder self() {
             return this;
         }
 
@@ -75,12 +74,12 @@ public class PrivateButtonPrompt extends Prompt {
             return new PrivateButtonPrompt(this);
         }
 
-        public Builder withInteractionHandler(Function<ButtonInteractionEvent, Mono<Message>> interactionHandler) {
+        public PrivateButtonPrompt.Builder withInteractionHandler(Function<ButtonInteractionEvent, Mono<Message>> interactionHandler) {
             this.interactionHandler = interactionHandler;
             return this;
         }
 
-        public Builder withButtonRowComponent(ButtonRowComponent buttonRowComponent) {
+        public PrivateButtonPrompt.Builder withButtonRowComponent(ButtonRowComponent buttonRowComponent) {
             this.buttonRowComponent = buttonRowComponent;
             return this;
         }

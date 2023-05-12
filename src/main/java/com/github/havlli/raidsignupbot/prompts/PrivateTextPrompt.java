@@ -1,71 +1,65 @@
 package com.github.havlli.raidsignupbot.prompts;
 
-import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.PrivateChannel;
+import discord4j.core.object.entity.channel.MessageChannel;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-public class PrivateTextPrompt extends Prompt {
-    private final Consumer<Message> inputHandler;
+public class PrivateTextPrompt extends BasicPrompt<MessageCreateEvent> {
     private final String errorMessage;
-
     public PrivateTextPrompt(Builder builder) {
-        super(builder.event, builder.promptMessage, builder.garbageCollector);
-        this.inputHandler = builder.inputHandler;
+        super(
+                builder.event,
+                builder.promptMessage,
+                builder.interactionHandler,
+                builder.garbageCollector,
+                MessageCreateEvent.class
+        );
         this.errorMessage = builder.errorMessage;
     }
 
     @Override
-    public Mono<Message> getMono() {
-        User user = event.getInteraction().getUser();
-        EventDispatcher eventDispatcher = event.getClient().getEventDispatcher();
-        Mono<PrivateChannel> privateChannelMono = user.getPrivateChannel();
-
-        return privateChannelMono
-                .flatMap(privateChannel -> privateChannel.createMessage(promptMessage))
-                .flatMap(previousMessage -> {
-                    collectGarbage(previousMessage);
-                    return eventDispatcher.on(MessageCreateEvent.class)
-                            .map(MessageCreateEvent::getMessage)
-                            .filter(message -> message.getAuthor().equals(Optional.of(user)))
-                            .next()
-                            .flatMap(message -> {
-                                if (inputHandler != null) inputHandler.accept(message);
-                                return Mono.just(message);
-                            })
-                            .onErrorResume(error -> handleError(privateChannelMono));
-                });
+    protected Mono<? extends MessageChannel> interactionChannel() {
+        return event.getInteraction().getUser().getPrivateChannel();
     }
 
-    private Mono<Message> handleError(Mono<PrivateChannel> privateChannelMono) {
+    @Override
+    protected Mono<Message> sendPrompt(MessageChannel channel) {
+        return channel.createMessage(promptMessage);
+    }
 
+    @Override
+    protected Predicate<? super MessageCreateEvent> interactionFilter() {
+        Optional<User> user = Optional.of(event.getInteraction().getUser());
+        return event -> event.getMessage().getAuthor().equals(user);
+    }
+
+    @Override
+    protected Mono<Message> handleErrors(Throwable error) {
         if (errorMessage == null) return Mono.empty();
 
-        return privateChannelMono
+        return interactionChannel()
                 .flatMap(channel -> channel.createMessage(errorMessage)
                         .flatMap(message -> {
                             collectGarbage(message);
                             return Mono.just(message);
-                        }))
+                        })
+                )
                 .then(this.getMono());
     }
 
-    private void collectGarbage(Message message) {
-        if (garbageCollector != null) garbageCollector.collectMessage(message);
-    }
-
     public static PrivateTextPrompt.Builder builder(ChatInputInteractionEvent event) {
-        return new Builder(event);
+        return new PrivateTextPrompt.Builder(event);
     }
 
-    public static class Builder extends PromptBuilder<Builder, PrivateTextPrompt> {
-        private Consumer<Message> inputHandler;
+    public static class Builder extends PromptBuilder<PrivateTextPrompt.Builder, PrivateTextPrompt> {
+        private Function<MessageCreateEvent, Mono<Message>> interactionHandler;
         private String errorMessage;
 
         private Builder(ChatInputInteractionEvent event) {
@@ -73,7 +67,7 @@ public class PrivateTextPrompt extends Prompt {
         }
 
         @Override
-        protected Builder self() {
+        protected PrivateTextPrompt.Builder self() {
             return this;
         }
 
@@ -82,12 +76,12 @@ public class PrivateTextPrompt extends Prompt {
             return new PrivateTextPrompt(this);
         }
 
-        public Builder withInputHandler(Consumer<Message> inputHandler) {
-            this.inputHandler = inputHandler;
+        public PrivateTextPrompt.Builder withInteractionHandler(Function<MessageCreateEvent, Mono<Message>> interactionHandler) {
+            this.interactionHandler = interactionHandler;
             return this;
         }
 
-        public Builder withOnErrorMessage(String errorMessage) {
+        public PrivateTextPrompt.Builder withOnErrorMessage(String errorMessage) {
             this.errorMessage = errorMessage;
             return this;
         }

@@ -86,7 +86,10 @@ public class CreateEventPrompt {
         return PrivateTextPrompt.builder(event)
                 .withPromptMessage("**Step 1**\nEnter your name")
                 .withGarbageCollector(garbageCollector)
-                .withInputHandler(embedEventBuilder::addName)
+                .withInteractionHandler(event -> {
+                    embedEventBuilder.addName(event.getMessage());
+                    return Mono.just(event.getMessage());
+                })
                 .build()
                 .getMono();
     }
@@ -95,7 +98,10 @@ public class CreateEventPrompt {
         return PrivateTextPrompt.builder(event)
                 .withPromptMessage("**Step 2**\nEnter description")
                 .withGarbageCollector(garbageCollector)
-                .withInputHandler(embedEventBuilder::addDescription)
+                .withInteractionHandler(event -> {
+                    embedEventBuilder.addDescription(event.getMessage());
+                    return Mono.just(event.getMessage());
+                })
                 .build()
                 .getMono();
     }
@@ -104,7 +110,10 @@ public class CreateEventPrompt {
         return PrivateTextPrompt.builder(event)
                 .withPromptMessage("**Step 3**\nEnter the date (format: yyyy-MM-dd)")
                 .withGarbageCollector(garbageCollector)
-                .withInputHandler(embedEventBuilder::addDate)
+                .withInteractionHandler(event -> {
+                    embedEventBuilder.addDate(event.getMessage());
+                    return Mono.just(event.getMessage());
+                })
                 .withOnErrorMessage("Invalid format! Try again.")
                 .build()
                 .getMono();
@@ -118,7 +127,10 @@ public class CreateEventPrompt {
         return PrivateTextPrompt.builder(event)
                 .withPromptMessage("**Step 4**\nEnter the time of the event in UTC timezone " + time + " (format: HH:mm)")
                 .withGarbageCollector(garbageCollector)
-                .withInputHandler(embedEventBuilder::addTime)
+                .withInteractionHandler(event -> {
+                    embedEventBuilder.addTime(event.getMessage());
+                    return Mono.just(event.getMessage());
+                })
                 .withOnErrorMessage("Invalid format! Try again.")
                 .build()
                 .getMono();
