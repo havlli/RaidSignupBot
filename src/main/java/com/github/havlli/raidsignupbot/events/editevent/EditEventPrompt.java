@@ -71,7 +71,6 @@ public class EditEventPrompt {
                 .onErrorResume(error -> privateChannelMono
                         .flatMap(channel -> channel.createMessage("Invalid format! Try again with correct format.")
                                 .flatMap(message -> {
-                                    System.out.println(error.getMessage());
                                     garbageCollector.collectMessage(message);
                                     return Mono.just(message);
                                 }))

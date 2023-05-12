@@ -4,6 +4,7 @@ import com.github.havlli.raidsignupbot.signupuser.SignupUser;
 import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,12 +49,15 @@ public class EmbedEventPersistence {
     }
 
     public void updateEmbedEvent(EmbedEvent updatedEmbedEvent) {
-        embedEventHashSet.forEach(embedEvent -> {
-            if (embedEvent.getEmbedId().equals(updatedEmbedEvent.getEmbedId())) {
-                embedEventHashSet.remove(embedEvent);
+        Iterator<EmbedEvent> iterator = embedEventHashSet.iterator();
+        while (iterator.hasNext()) {
+            EmbedEvent embedEvent = iterator.next();
+            if(embedEvent.getEmbedId().equals(updatedEmbedEvent.getEmbedId())) {
+                iterator.remove();
                 embedEventHashSet.add(updatedEmbedEvent);
+                break;
             }
-        });
+        }
     }
 
     public Optional<EmbedEvent> getEmbedEventById(String embedId) {
