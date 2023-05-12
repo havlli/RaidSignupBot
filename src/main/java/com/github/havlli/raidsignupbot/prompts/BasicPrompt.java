@@ -57,7 +57,7 @@ public abstract class BasicPrompt<T extends Event> implements Prompt {
     }
 
     protected Mono<Message> handleErrors(Throwable error) {
-        return Mono.empty();
+        return Mono.error(error);
     }
 
     protected void collectGarbage(Message message) {
