@@ -3,19 +3,17 @@ package com.github.havlli.raidsignupbot.embedevent;
 import com.github.havlli.raidsignupbot.signupuser.SignupUser;
 import com.github.havlli.raidsignupbot.signupuser.SignupUserDAO;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class EmbedEventPersistence {
-    private static HashSet<EmbedEvent> embedEventHashSet;
+    private static Set<EmbedEvent> embedEventHashSet;
     private final EmbedEventDAO embedEventDAO;
     private final SignupUserDAO signupUserDAO;
     public EmbedEventPersistence(EmbedEventDAO embedEventDAO, SignupUserDAO signupUserDAO) {
         this.embedEventDAO = embedEventDAO;
         this.signupUserDAO = signupUserDAO;
-        embedEventHashSet = new HashSet<>();
+        embedEventHashSet = Collections.newSetFromMap(new ConcurrentHashMap<>());
         populateEmbedEventHashSet();
         forEachEmbedEventPopulateSignupUserList();
     }
@@ -32,7 +30,7 @@ public class EmbedEventPersistence {
         });
     }
 
-    public HashSet<EmbedEvent> getData() {
+    public Set<EmbedEvent> getData() {
         return embedEventHashSet;
     }
 

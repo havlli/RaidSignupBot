@@ -1,6 +1,7 @@
 package com.github.havlli.raidsignupbot.embedevent;
 
 import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class EmbedEventService {
@@ -34,7 +35,7 @@ public class EmbedEventService {
         return oldEmbedEvent;
     }
 
-    public HashSet<EmbedEvent> getActiveEmbedEvents() {
+    public Set<EmbedEvent> getActiveEmbedEvents() {
         return embedEventPersistence.getData();
     }
 

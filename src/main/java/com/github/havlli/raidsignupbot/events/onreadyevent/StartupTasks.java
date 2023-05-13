@@ -7,7 +7,7 @@ import com.github.havlli.raidsignupbot.logger.Logger;
 import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.Event;
 
-import java.util.HashSet;
+import java.util.Set;
 
 public class StartupTasks implements Tasks {
 
@@ -26,7 +26,7 @@ public class StartupTasks implements Tasks {
 
     private void subscribeActiveEmbedEventsFromDatabase() {
         EventDispatcher eventDispatcher = event.getClient().getEventDispatcher();
-        HashSet<EmbedEvent> activeEmbedEvents = Dependencies.getInstance()
+        Set<EmbedEvent> activeEmbedEvents = Dependencies.getInstance()
                 .getEmbedEventService()
                 .getActiveEmbedEvents();
 
